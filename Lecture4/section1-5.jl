@@ -163,8 +163,21 @@ md"""
 h= $(@bind h Slider(.1:.1:10, show_value=true, default = 5))
 """
 
-# ╔═╡ b76a5bd6-802f-11eb-0951-1f1092dee8de
-1+1
+# ╔═╡ 58a30e54-7a08-11eb-1c57-dfef0000255f
+# T⁻¹ = id
+#  T⁻¹ = rotate(α)
+#  T⁻¹ = shear(α)
+#   T⁻¹ = lin(A) # uses the scrubbable
+#   T⁻¹ = shear(α) ∘ shear(-α)
+ # T⁻¹ = nonlin_shear(α)
+ #   T⁻¹ =   inverse(nonlin_shear(α))
+#    T⁻¹ =  nonlin_shear(-α)
+#  T⁻¹ =  xy
+# T⁻¹ = warp(α)
+ T⁻¹ = ((x,y),)-> (x+α*y^2,y+β*x^2) # may be non-invertible
+
+# T⁻¹ = ((x,y),)-> (x,y^2)
+# T⁻¹  = flipy ∘ ((x,y),) ->  ( (β*x - α*y)/(β - y)  , -h*y/ (β - y)   )
 
 # ╔═╡ 5d33f6ea-7e9c-11eb-2fb3-dbb7cb07c60c
 md"""
@@ -286,22 +299,6 @@ begin
 	 rotate(θ) = ((x, y),) -> SA[cos(θ)*x + sin(θ)*y, -sin(θ)*x + cos(θ)*y]
 	 shear(α)  = ((x, y),) -> SA[x + α*y, y]
 end
-
-# ╔═╡ 58a30e54-7a08-11eb-1c57-dfef0000255f
-# T⁻¹ = id
-#  T⁻¹ = rotate(α)
-  T⁻¹ = shear(α)
-#   T⁻¹ = lin(A) # uses the scrubbable 
-#   T⁻¹ = shear(α) ∘ shear(-α)
- # T⁻¹ = nonlin_shear(α)  
- #   T⁻¹ =   inverse(nonlin_shear(α))
-#    T⁻¹ =  nonlin_shear(-α)
-#  T⁻¹ =  xy 
-# T⁻¹ = warp(α)
-# T⁻¹ = ((x,y),)-> (x+α*y^2,y+α*x^2) # may be non-invertible
-
-# T⁻¹ = ((x,y),)-> (x,y^2)  
-# T⁻¹  = flipy ∘ ((x,y),) ->  ( (β*x - α*y)/(β - y)  , -h*y/ (β - y)   ) 
 
 # ╔═╡ 080d87e0-7aa2-11eb-18f5-2fb6a7a5bcb4
 md"""
@@ -556,7 +553,7 @@ md"""
 matmul (matrix multiply) that realizes this fact.  
 
 To see what it is exactly, remember the first column of `lin(A) ∘ lin(B)` should
-be the result of computing the two matrix times vectors  $y=A*[1,0]$ then $z=A*y$,
+be the result of computing the two matrix times vectors  $y=B*[1,0]$ then $z=A*y$,
 and the second column is the same for $[0,1]$.
 
 This is worth writing out if you have never done this.
@@ -578,6 +575,7 @@ begin
 	T₂ = lin(P*Q)
 	
 	lin(P*Q)((1, 0)), (lin(P)∘lin(Q))((1, 0))
+	T₂((0, 1)), T₁((0, 1))
 end
 
 # ╔═╡ 350f40f7-795f-4f33-89b8-ff9ba4819e1c
@@ -657,7 +655,7 @@ let
 	  T = scale(0.5) ∘ scale(2)
 	
 	  v = rand(2)
-	  T(v) .≈ v 
+	  T(v) .≈ v
 end
 
 # ╔═╡ 0957fd9a-7a72-11eb-0566-e93ef32fb626
@@ -843,7 +841,7 @@ begin
 		m = max(cols, rows)	
 		
 	    # function to take xy to ij
-		xy_to_ij =  translate(rows/2, cols/2) ∘ swap ∘ flipy ∘ scale(m/2)
+		xy_to_ij = translate(rows/2, cols/2) ∘ swap ∘ flipy ∘ scale(m/2)
 		
 		# apply the function and "snap to grid"
 		i, j = floor.(Int, xy_to_ij((x, y))) 
@@ -877,7 +875,7 @@ begin
 	
 	function transform_ij_to_xy(i::Int,j::Int,pixels)
 	
-	   ij_to_xy =  scale(2/pixels) ∘ flipy ∘ swap ∘ translate(-pixels/2,-pixels/2)
+	   ij_to_xy = scale(2/pixels) ∘ flipy ∘ swap ∘ translate(-pixels/2,-pixels/2)
 	   ij_to_xy([i,j])
 	end
 
@@ -1711,7 +1709,6 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╟─2efaa336-7630-11eb-0c17-a7d4a0141dac
 # ╟─7f28ac40-7914-11eb-1403-b7bec34aeb94
 # ╟─ce55beee-7643-11eb-04bc-b517703facff
-# ╠═b76a5bd6-802f-11eb-0951-1f1092dee8de
 # ╟─5d33f6ea-7e9c-11eb-2fb3-dbb7cb07c60c
 # ╟─45dccdec-7912-11eb-01b4-a97e30344f39
 # ╟─d2fb356e-7f32-11eb-177d-4f47d6c9e59b
