@@ -214,7 +214,7 @@ penny_image = load(download("https://www.usacoinbook.com/us-coins/lincoln-memori
 
 # ╔═╡ bb1465c4-8723-11eb-1abc-bdb5a7028cf2
 begin
-	head = penny_image[:, 1:end÷2]
+	head = penny_image[:, 1:end÷2] # end -> last index of a collection
 	tail = penny_image[:, end÷2:end]
 end;
 
@@ -381,7 +381,7 @@ We can plot **categorical data** using a **bar chart**, `bar` in Plots.jl. This 
 """
 
 # ╔═╡ 02d03642-86b4-11eb-365a-63ff61ddd3b5
-rolls = rand(1:6, 100000)   # try modifying 100 by adding more zeros
+rolls = rand(1:6, 100)   # try modifying 100 by adding more zeros
 
 # ╔═╡ 94688c1a-8747-11eb-13a3-eb36f731674c
 rolls .== 1
@@ -408,7 +408,7 @@ md"""
 """
 
 # ╔═╡ d0c9814e-86b1-11eb-2f29-1d041bccc649
-roll_dice(n) = sum( rand(1:12, n) )
+roll_dice(n) = sum( rand(1:6, n) )
 
 # ╔═╡ 7a16b674-86b7-11eb-3aa5-83712cdc8580
 trials = 10^6
@@ -548,11 +548,9 @@ chisq_data = rand( Chisq(dof), 100000 )
 histogram( chisq_data, norm=true, bins=100, size=(500, 300), leg=false, alpha=0.5,
 	xlims=(0, 10*√(dof)))
 
-
 # ╔═╡ da62fd1c-873c-11eb-0758-e7cb48e964f1
 histogram( [ sum( randn().^2 for _=1:dof )  for _ = 1:100000], norm=true,
 	alpha=0.5, leg=false)
-
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
