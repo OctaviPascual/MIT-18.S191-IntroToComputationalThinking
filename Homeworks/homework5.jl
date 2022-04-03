@@ -21,26 +21,23 @@ student = (name = "Jazzy Doe", kerberos_id = "jazz")
 # ╔═╡ ea28bf57-ba62-41ce-8be6-d38ca2c5caa3
 [j for j=1:1000 if j*(1/j) != 1]
 
-# ╔═╡ 8efcaaeb-4900-404b-ae59-65db0bde8790
-
+# ╔═╡ f0e59676-fd8e-4609-833e-f7d1a5a6e9e3
+smallest_j = 49
 
 # ╔═╡ a5be0775-68de-41ce-95cd-1465723d099b
-
+error = 1 - smallest_j * (1 / smallest_j)
 
 # ╔═╡ 4abec609-09cd-4f86-8d86-a7d02325cc7b
-
-
-# ╔═╡ 32e073bb-943f-4fa9-b15f-5ec18feecf15
-
+log2(error)
 
 # ╔═╡ d221c61c-a4ab-4a82-b89d-52735d957cae
-
+32 * 23 - 736
 
 # ╔═╡ c3d49b98-a9c1-4aba-becc-7fa84f4bbc75
-
+3.2 * 23 - 73.6
 
 # ╔═╡ 7b33c09c-2ef2-4b97-b5a5-5fdf9268f76b
-
+3.2 * 2.3 - 7.36
 
 # ╔═╡ 615b88b6-8505-11eb-0a7c-294ee5ae7474
 begin
@@ -48,6 +45,7 @@ begin
 		# Your code here
 		v::Vector{Float64}
 		w::Vector{Float64}
+		FirstRankOneMatrix(v, w) = new(v, w)
 	end
 	
 	# Add the extra constructor here
@@ -56,7 +54,7 @@ begin
 end
 
 # ╔═╡ b0db7388-850c-11eb-0915-597f1fa5ab93
-ten_twelve = missing # Your code here
+ten_twelve = FirstRankOneMatrix(1:10, 1:12) # Your code here
 
 # ╔═╡ 2dfc2ef9-3efa-4b82-960f-f2ef0171e9eb
 sqrt === Base.sqrt
@@ -64,19 +62,14 @@ sqrt === Base.sqrt
 # ╔═╡ d4a0baea-cc02-4d91-a938-8181dea7b47a
 filter === Base.filter
 
-# ╔═╡ 7adbcbab-66e7-4b58-b197-5c220ba1e9a2
-# methods(size)
-
 # ╔═╡ fada4734-8505-11eb-3f2b-d1f1ef391ba4
 function Base.size(M::FirstRankOneMatrix)
-	
-	return missing # Your code here
+	return length(M.v), length(M.w)
 end
 
 # ╔═╡ 590dfe1a-8506-11eb-0069-d7cd91f02a65
 function Base.getindex(M::FirstRankOneMatrix, i, j)
-	
-	return missing # Your code here
+	return M.v[i] * M.w[j]
 end
 
 # ╔═╡ 941b6b10-8ae9-11eb-3bf8-b732f5f60af3
@@ -85,23 +78,15 @@ ten_twelve
 # ╔═╡ a243a400-8af3-11eb-0637-cf8f80aae86d
 ones(10, 12) # An example matrix (two-dimensional array)
 
-# ╔═╡ c7a15c5e-8505-11eb-3af2-2fa84b74b590
-function print_as_matrix(M::FirstRankOneMatrix)
-	
-	# Your code here
-	
-end
-
-# ╔═╡ b0a0b9a4-850b-11eb-30f1-11f5270efe02
-with_terminal() do
-	print_as_matrix(ten_twelve)
-end
+# ╔═╡ aa756549-1b9f-41a1-a2e1-713166e4211a
+(ones(12, 12) + ones(12, 12)) * (ones(12, 12) + ones(12, 12))
 
 # ╔═╡ b577420c-8501-11eb-267a-719125315fe1
 begin
 	struct RankOneMatrix{T} <: AbstractMatrix{T}
 		v::AbstractVector{T}
 		w::AbstractVector{T}
+		RankOneMatrix(v::AbstractVector{T}, w::AbstractVector{T}) where T = new{T}(v, w)
 	end
 	
 	# Add the two extra constructors
@@ -110,28 +95,26 @@ begin
 end
 
 # ╔═╡ eb612772-8b06-44bb-a36a-827435cbb2ee
-
+RankOneMatrix([1,2], [3,4,5]);
 
 # ╔═╡ d3e7c8d1-4b4a-47b6-9c96-150333078f42
-
+RankOneMatrix(1:10);
 
 # ╔═╡ f2d8b45c-8501-11eb-1c6a-5f819c240d9d
 function Base.size(M::RankOneMatrix)
-	
-	return missing # Your code here
+	return length(M.v), length(M.w)
 end
 
 # ╔═╡ ed72e880-8afa-11eb-3a4a-175a838188d9
 function Base.getindex(M::RankOneMatrix, i, j)
-	
-	return missing # Your code here
+	return M.v[i] * M.w[j]
 end
 
 # ╔═╡ 7b3fb0ef-9a9e-401c-8c09-e5615134a4ad
 R2 = RankOneMatrix([1,2], [3,4,5])
 
 # ╔═╡ fc962c72-8501-11eb-2821-cbb7a52d5f61
-M = RankOneMatrix(1:10) # missing # Your code here
+M = RankOneMatrix(1:10)
 
 # ╔═╡ 0887ee78-0e8a-41c7-90e7-44237acc1477
 collect(M)
@@ -139,18 +122,13 @@ collect(M)
 # ╔═╡ 1705dc7b-9f93-440b-acbb-ecb362d08125
 typeof(collect(M))
 
-# ╔═╡ ee58251a-8511-11eb-074c-5b1e27c4ebd4
-function matvec(M::RankOneMatrix, x)
-	
-	return missing # Your code here
-end
-
 # ╔═╡ ba3cb45a-8502-11eb-2141-6369b0e08807
 begin
 	struct RankTwoMatrix{T} <: AbstractMatrix{T}
 		# Your code here
 		A::RankOneMatrix{T}
 		B::RankOneMatrix{T}
+		RankTwoMatrix(A::RankOneMatrix{T}, B::RankOneMatrix{T}) where T = new{T}(A, B)
 	end
 	
 	# Add a constructor that uses two vectors/ranges
@@ -158,31 +136,28 @@ begin
 end
 
 # ╔═╡ f5a95dd8-850d-11eb-2aa7-2dcb1868577f
-
+RankTwoMatrix(1.0:10.0, 0.0:0.1:0.9);
 
 # ╔═╡ c784e02c-8502-11eb-3efa-7f4c45f4274c
 function Base.getindex(M::RankTwoMatrix, i, j)
-
-	return missing # Your code here
+	return M.A[i, j] + M.B[i, j]
 end
 
 # ╔═╡ 0bab818e-8503-11eb-02b3-178098599847
 function Base.size(M::RankTwoMatrix)
-	
-	return missing # Your code here
+	return size(M.A)
 end
 
 # ╔═╡ b6717812-8503-11eb-2729-39bfdc1fd2f9
 struct LowRankMatrix <: AbstractMatrix{Float64}
-	# Your code here
 	Ms::Vector{RankOneMatrix}
 	rank::Int
+	LowRankMatrix(Ms, rank) = new(Ms, rank)
 end
 
 # ╔═╡ c49e350e-8503-11eb-15de-7308dd03dc08
 function Base.getindex(M::LowRankMatrix, i, j)
-	
-	return missing # Your code here
+	return sum(M.Ms[k][i, j] for k=1:M.rank)
 end
 
 # ╔═╡ eadb174e-2c1d-48c8-9de2-99cdc2b38d32
@@ -232,6 +207,11 @@ Notice that when you re-run the computation, the result does not change. Floatin
 👉 Take the smallest number `j` you found above and compute the error, i.e. the distance between `j*(1/j)` and `1`.  
 
 Is this an integer power of 2?  Which one? (`log2` might help.)
+"""
+
+# ╔═╡ 32e073bb-943f-4fa9-b15f-5ec18feecf15
+md"""
+The error is indeed a power of 2, it's 1/2^53
 """
 
 # ╔═╡ 7d1e1724-cd1a-483b-af40-f24ae5301849
@@ -437,18 +417,45 @@ md"""
 
 # ╔═╡ dd27f508-8503-11eb-36b9-33f5f99f78b0
 function Base.size(M::LowRankMatrix)
-	
-	return missing # Your code here
+	return size(M.Ms[1])
 end
 
 # ╔═╡ ead4c008-0e7e-4414-aced-d4a576423bd3
 size === Base.size
 
+# ╔═╡ 7adbcbab-66e7-4b58-b197-5c220ba1e9a2
+methods(size);
+
 # ╔═╡ 0b7c6cbe-57de-419d-adcb-8724791f9c89
 Base.size(ten_twelve)
 
+# ╔═╡ c7a15c5e-8505-11eb-3af2-2fa84b74b590
+function print_as_matrix(M::FirstRankOneMatrix)
+	m, n = size(M)
+	println(m, "x", n, " FirstRankOneMatrix")
+
+	pad = length(repr(maximum(M.w) * maximum(M.v))) + 1
+	for i=1:m
+		for j=1:n
+			print(lpad(M[i, j], pad))
+		end
+		println()
+	end
+end
+
+# ╔═╡ b0a0b9a4-850b-11eb-30f1-11f5270efe02
+with_terminal() do
+	print_as_matrix(ten_twelve)
+end
+
 # ╔═╡ 52451232-2c3d-4425-a94a-da1a955cf784
 Base.size(R2)
+
+# ╔═╡ ee58251a-8511-11eb-074c-5b1e27c4ebd4
+function matvec(M::RankOneMatrix, x)
+	m, _ = size(M)
+	return sum(M.w[i] * x[i] for i in 1:m) * M.v
+end
 
 # ╔═╡ 93a75ea0-8b0c-11eb-3946-3d5d92487fb5
 let
@@ -464,8 +471,7 @@ md"""
 
 # ╔═╡ 3fed837a-8512-11eb-1fdd-c1b72b48d07b
 function matvec(M::LowRankMatrix, x)
-	
-	return missing # Your code here
+	return sum(matvec(M.Ms[k], x) for k=1:M.rank)
 end
 
 # ╔═╡ 2d65bd1a-8512-11eb-1bd2-0313588dfa0e
@@ -479,9 +485,9 @@ One of the big advantages of our rank-1 matrices is its space efficiency: to "st
 # ╔═╡ f9556098-8504-11eb-08a0-39fbe00892da
 answer = md"""
 
-From rank ...
+From rank $k = n/2$ onwards.
 
-Because ....
+Because for a rank k matrix, we store k rank-1 matrices, or $2\times k$ vectors of $n$ vertices. This corresponds to $2\times n\times k$ entries. If we solve the equation $n^2$ = 2*n*k, we get $k = n/2$.
 """
 
 # ╔═╡ 295acdac-880a-402e-9f7e-19b0fc801130
@@ -505,9 +511,6 @@ md"""
 👉 What are the _singular values_ of `biggie`?
 """
 
-# ╔═╡ 210392ff-0a22-4e55-be08-9f58804282cf
-singular_values_of_biggie = missing
-
 # ╔═╡ bb649c89-709c-49c8-8111-53044e8e682a
 md"""
 
@@ -529,12 +532,14 @@ Keep things simple. Inside your method, call `LinearAlgebra.svd` on a type that 
 
 # ╔═╡ 6c9ae344-084e-459c-841c-8377451507fd
 function LinearAlgebra.svd(A::RankOneMatrix)
-	
-	return missing
+	return LinearAlgebra.svd(Matrix(A))
 end
 
 # ╔═╡ 167b9580-fa18-4248-8643-a0fde723ecc4
 svd(biggie)
+
+# ╔═╡ 210392ff-0a22-4e55-be08-9f58804282cf
+singular_values_of_biggie = svd(biggie).S
 
 # ╔═╡ bbc4a595-a63e-4a12-9690-f39a23b30ae1
 svd(A)
@@ -549,7 +554,7 @@ md"""
 """
 
 # ╔═╡ ed4b7ea5-3266-466d-a817-7ab2cc82ac9c
-
+count(x -> !isapprox(x, 0, atol=1e-5), LinearAlgebra.svd(A).S)
 
 # ╔═╡ 5c6aee48-017b-49ff-af1a-a31af30a45a9
 md"""
@@ -563,8 +568,7 @@ To keep things simple, you can assume that "approximately zero" means: less than
 
 # ╔═╡ a2b7f0c3-488b-4ce9-aed6-b8ccddac6a57
 function numerical_rank(A::AbstractMatrix; tol=1e-5)
-	
-	return missing
+	return count(x -> !isapprox(x, 0, atol=tol), LinearAlgebra.svd(A).S)
 end
 
 # ╔═╡ d3420859-d558-47cb-aaf7-d51a5e2d1f6e
@@ -586,8 +590,7 @@ md"""
 
 # ╔═╡ 01b12200-2e7e-4f19-96b9-5b6d6cb03233
 function k_rank_ones(k, m, n)
-	
-	return missing
+	return sum(RankOneMatrix(rand(m),rand(n)) for _=1:k)
 end
 
 # ╔═╡ e1e1067b-93ba-40df-bd09-7599538e6181
@@ -600,16 +603,16 @@ md"""
 """
 
 # ╔═╡ a6bb92f9-0cb2-4fdd-8b67-f286edbbdcb6
-
+numerical_rank(k_rank_ones(5, 10, 10))
 
 # ╔═╡ 57c19601-122b-414f-bc99-56f98c794e61
-
+numerical_rank(k_rank_ones(5, 3, 10))
 
 # ╔═╡ 9813e9f9-9970-4a8b-b3ca-e6a699e6fda4
-
+numerical_rank(k_rank_ones(5, 10, 4))
 
 # ╔═╡ c8829a12-917a-4ff4-87c9-fe2b25aaa99c
-
+numerical_rank(k_rank_ones(5, 2, 4))
 
 # ╔═╡ 5aabbec1-a079-4936-9cd1-9c25fe5700e6
 md"## Function library
@@ -1215,10 +1218,10 @@ uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
 # ╠═ea28bf57-ba62-41ce-8be6-d38ca2c5caa3
 # ╟─a759c4d5-ca00-4dda-b39c-1093ba9bef0e
 # ╟─a5901f93-007f-4a30-97fc-29b367ec47c6
-# ╠═8efcaaeb-4900-404b-ae59-65db0bde8790
+# ╠═f0e59676-fd8e-4609-833e-f7d1a5a6e9e3
 # ╠═a5be0775-68de-41ce-95cd-1465723d099b
 # ╠═4abec609-09cd-4f86-8d86-a7d02325cc7b
-# ╠═32e073bb-943f-4fa9-b15f-5ec18feecf15
+# ╟─32e073bb-943f-4fa9-b15f-5ec18feecf15
 # ╟─7d1e1724-cd1a-483b-af40-f24ae5301849
 # ╠═d221c61c-a4ab-4a82-b89d-52735d957cae
 # ╠═c3d49b98-a9c1-4aba-becc-7fa84f4bbc75
@@ -1250,6 +1253,7 @@ uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
 # ╠═941b6b10-8ae9-11eb-3bf8-b732f5f60af3
 # ╟─1b3cc404-9da8-4acd-9df5-5815ce167c34
 # ╠═a243a400-8af3-11eb-0637-cf8f80aae86d
+# ╠═aa756549-1b9f-41a1-a2e1-713166e4211a
 # ╟─4e926bfe-8734-11eb-1355-e1d1d9b36929
 # ╠═c7a15c5e-8505-11eb-3af2-2fa84b74b590
 # ╟─9eb846c0-8737-11eb-101b-0191f715d8c9
@@ -1306,7 +1310,7 @@ uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
 # ╟─863f4490-8b06-11eb-352b-61cec188ae57
 # ╟─f7fb3b32-8b00-11eb-0c0e-8f8d68f849a6
 # ╟─2d65bd1a-8512-11eb-1bd2-0313588dfa0e
-# ╠═f9556098-8504-11eb-08a0-39fbe00892da
+# ╟─f9556098-8504-11eb-08a0-39fbe00892da
 # ╟─35d22fd9-9cfc-47c5-8adb-a01f14586be3
 # ╟─295acdac-880a-402e-9f7e-19b0fc801130
 # ╠═54778212-3702-467d-8a96-4fa18b3ccd63
