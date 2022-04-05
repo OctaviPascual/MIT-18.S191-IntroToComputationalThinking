@@ -451,6 +451,19 @@ flips = [Int(bernoulli(0.25)) for i in 1:100]
 # ╔═╡ 0e7a04a4-8bf4-11eb-2e9d-fb48c23b8d8c
 mean(flips)
 
+# ╔═╡ ece1caa9-f368-4c1a-a5f7-1da5cdaa7e63
+var(flips)
+
+# ╔═╡ 907fae2e-ef1e-4301-b114-dae25998ac54
+flips_centered = flips .- mean(flips)
+
+# ╔═╡ f6a44e2c-bb73-432c-baca-eebfe9c50950
+sum(flips_centered)
+
+# ╔═╡ e2b49b5c-059d-44f1-8bf9-1acc45e0ae84
+# If we sum the squared deviations, we get the sum of squares
+sum(flips_centered.^2)
+
 # ╔═╡ e2d764d0-0845-11eb-0031-e74d2f5acaf9
 function step!(infectious, p)
 	for i in 1:length(infectious)
@@ -466,7 +479,7 @@ end
 # ╔═╡ 58d8542c-08db-11eb-193a-398ce01b8635
 begin
 	infected = [true for i in 1:N]
-		
+
 	results = [copy(step!(infected, ppp)) for i in 1:T]
 	pushfirst!(results, trues(N))
 end
@@ -492,7 +505,7 @@ begin
 	plot!(simulate_recovery(pp, T), label="run 2", alpha=0.5, lw=2, m=:o)
 	
 	xlabel!("time t")
-	ylabel!("number infectious")
+	ylabel!("number of light bulbs that are alive")
 end
 
 # ╔═╡ 6a545268-0846-11eb-3861-c3d5f52c061b
@@ -693,9 +706,6 @@ People get sick / light bulbs not on discrete time clock. Limit as $\delta t \to
 
 You measure it discretely
 """
-
-# ╔═╡ 1336397c-8c3c-11eb-2ecf-eb017a3a65cd
-λ
 
 # ╔═╡ d74bace6-08f4-11eb-2a6b-891e52952f57
 md"""
@@ -1717,6 +1727,10 @@ version = "0.9.1+5"
 # ╟─ac98f5da-8bf3-11eb-076f-597ce4455e76
 # ╠═0e7a04a4-8bf4-11eb-2e9d-fb48c23b8d8c
 # ╟─111eccd2-8bf4-11eb-097c-7582f811d146
+# ╠═ece1caa9-f368-4c1a-a5f7-1da5cdaa7e63
+# ╠═907fae2e-ef1e-4301-b114-dae25998ac54
+# ╠═f6a44e2c-bb73-432c-baca-eebfe9c50950
+# ╠═e2b49b5c-059d-44f1-8bf9-1acc45e0ae84
 # ╟─4edaec4a-8bf4-11eb-3094-010ebe9b56ab
 # ╟─9d66e31e-8cad-11eb-3ad0-3980ba66cb0e
 # ╠═8405e310-8bf8-11eb-282b-d93b4fc683aa
@@ -1774,7 +1788,6 @@ version = "0.9.1+5"
 # ╟─4d61636e-8c3d-11eb-2726-6dc51e8a4f84
 # ╟─3ae9fc0a-8c3d-11eb-09d5-13cefa2d9da5
 # ╟─c92bf164-8c3d-11eb-128c-7bd2c0ad681e
-# ╟─1336397c-8c3c-11eb-2ecf-eb017a3a65cd
 # ╟─d74bace6-08f4-11eb-2a6b-891e52952f57
 # ╟─dbdf2812-08f4-11eb-25e7-811522b24627
 # ╟─238f0716-0903-11eb-1595-df71600f5de7
