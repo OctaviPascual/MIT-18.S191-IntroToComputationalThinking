@@ -524,7 +524,8 @@ Now we need to define the various functions on this type representing a sum
 """
 
 # ╔═╡ 90ee7558-8ff9-11eb-3602-271890987ece
-Statistics.mean(S::SumOfTwoRandomVariables) = mean(S.X1) + mean(S.X2)
+Statistics.mean(S::SumOfTwoRandomVariables) = mean(S.X1) + mean(S.X2) 
+# mean of a sum is the sum of the means -> linearity of expectations
 
 # ╔═╡ bd083794-8fd8-11eb-0155-e59fe27d64f2
 Statistics.mean(total)
