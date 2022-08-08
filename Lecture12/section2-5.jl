@@ -227,6 +227,9 @@ begin
 	for i in 1:10
 		plot!(walk1D(100), leg=false, size=(500, 300), lw=2, alpha=0.5)
 	end
+
+	xlabel!("time")
+	ylabel!("x position")
 	
 	plot!()
 end
@@ -276,7 +279,7 @@ step(w::Walker2D) = rand( [ [1, 0], [0, 1], [-1, 0], [0, -1] ] )
 update(w::Walker2D, step::Vector) = Walker2D(w.x + step[1], w.y + step[2])
 
 # ╔═╡ cb0ef266-91d5-11eb-314b-0545c0c817d0
-function trajectory(w::W, N) where {W}   # W is a type parameter
+function trajectory(w::W, N) where {W <: Walker}   # W is a type parameter
 	ws = [position(w)]
 
 	for i in 1:N
