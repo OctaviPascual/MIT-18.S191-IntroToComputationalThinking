@@ -99,7 +99,7 @@ Let's start by thinking about Pascal's triangle. (Note that [Pascal was not the 
 """
 
 # ╔═╡ e8ceab7b-45db-4393-bb8e-e000ecf78d2c
-pascal(N) = [binomial(n, k) for n = 0:N, k=0:N]
+pascal(N) = [binomial(n, k) for n=0:N, k=0:N]
 
 # ╔═╡ 2d4dffb9-39e4-48de-9688-980b96814c9f
 pascal(10)
@@ -150,7 +150,7 @@ Note that the visual representation of a sparse matrix changes at a particular v
 
 # ╔═╡ f4c9b02b-738b-4de1-9e9d-05b1616bee0b
 md"""
-The pattern is quite striking!
+The pattern is quite striking! When something gets very very large, you really want sometimes to loose information to make it understandable.
 """
 
 # ╔═╡ d1c47afa-ab7f-4543-a161-e3ceb6f11eb4
@@ -275,10 +275,10 @@ So the trajectory is given by
 """
 
 # ╔═╡ 8082092b-b6bf-4619-8776-39fdd6c9b7c1
-cumsum(steps)
+[0; cumsum(steps)]
 
 # ╔═╡ 34c0b850-5e95-4eb9-8435-3aae8d124772
-plot(cumsum(steps), m=:o, leg=false, size=(500, 300))
+plot([0; cumsum(steps)], m=:o, leg=false, size=(500, 300))
 
 # ╔═╡ 4115f7cb-d45f-4cc2-86bf-316c074393f8
 md"""
@@ -494,7 +494,7 @@ let
 	plot!(1:15, [0; cumsum(sign.(randn(14)))], zeros(15), alpha=0.6, m=:o, lw=2, c=color_list)
 	plot!(xs, ys, zs, c=cs, xlims=(1, 15), ylims=(-30, 30), zlims=(0, 1), lw=2.5, alpha=0.7, xticks=(1:15), yticks=(-20:10:20))
 	
-xlabel!("t")
+	xlabel!("t")
 	ylabel!("space")
 
 end
