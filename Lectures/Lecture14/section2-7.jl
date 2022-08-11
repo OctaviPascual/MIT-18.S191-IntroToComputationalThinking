@@ -106,9 +106,6 @@ DISCRETE MATH OBJECTS (examples):
 # ╔═╡ 45ecee7e-970e-11eb-22fd-01f56876684e
 gplot( barabasi_albert(150, 2) )
 
-# ╔═╡ 52fa7f18-757a-4bf5-b851-32a1fca9c378
-
-
 # ╔═╡ 61ffe0f2-9615-11eb-37d5-f9e30a31c111
 md"""
 By contrast, entire intervals or the whole real line is associated with continuous mathematics. 
@@ -149,7 +146,7 @@ In fact, think of a range object such as 2:2:20.  You could think of this as jus
 [2:2:20;][7] # Extracts an element from Memory (of course there is an address calculation)
 
 # ╔═╡ 2c64f98d-dc84-4fa5-81ce-25b319ff9583
-(2:2:20)[7] # Compute 2*7 (more or less)
+(2:2:20;)[7] # Compute 2*7 (more or less)
 
 # ╔═╡ 0a379cae-386d-4daa-ab6f-9d0424c1cdc1
 begin
@@ -1609,7 +1606,6 @@ version = "0.9.1+5"
 # ╟─43e39a6c-918a-11eb-2408-93563b4fb8c1
 # ╟─719a4c8c-9615-11eb-3dd7-7fb786f7fa17
 # ╠═45ecee7e-970e-11eb-22fd-01f56876684e
-# ╠═52fa7f18-757a-4bf5-b851-32a1fca9c378
 # ╟─61ffe0f2-9615-11eb-37d5-f9e30a31c111
 # ╟─627f6db6-9617-11eb-0453-a1f9e341ecfe
 # ╟─091a8a44-918c-11eb-2ee3-9be84a311afd
