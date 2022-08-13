@@ -99,7 +99,6 @@ md"""
 # ╔═╡ 280d112f-d34a-4cc4-9e3a-4ebbfcd5eb51
 n = 10
 
-
 # ╔═╡ b5031c96-db57-4baf-b271-6bb12e29de9b
 x = sort((rand( -10:100, n)))
 
@@ -373,8 +372,7 @@ Statisticians know an exact formula for the theoretical std of the intercept
 """
 
 # ╔═╡ 1a6ad08d-c3bb-47e7-bdee-156bbff3aeda
-    sb = σ * norm(x)  / norm(x.-mean(x)) / sqrt(n)
-        
+sb = σ * norm(x)  / norm(x.-mean(x)) / sqrt(n)        
 
 # ╔═╡ c55e4894-db71-4729-a1a1-5f68b45e3bf5
 md"""
@@ -421,7 +419,7 @@ md"""
 
 # ╔═╡ ce89b805-39a2-49e6-8781-c557aa73ed27
 begin	
-	histogram( last.(s) ./ (σ^2/(n-2)) , alpha=.6, bins=100, norm=true,legend=false)
+	histogram( last.(s) ./ (σ^2/(n-2)) , alpha=.6, bins=100, norm=true, legend=false)
 	vline!([1],color=:white)
 	title!("residual")
 	vline!([n-2],color=:white, lw=4)
@@ -429,7 +427,6 @@ begin
 	# ylims!(0,.13)
 	plot!( x-> pdf(Chisq(n-2),x) , lw=4 , color=:red )
 	plot!()
-	
 end
 
 # ╔═╡ 75f9b5e9-775d-4767-9da6-222f977da686
