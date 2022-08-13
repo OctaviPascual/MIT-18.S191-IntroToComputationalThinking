@@ -14,10 +14,10 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 400ebe26-0dea-4cf2-8744-6c73a45cd33e
-using PlutoUI, Plots, Statistics, Optim, JuMP, Ipopt, ForwardDiff
+# ╔═╡ 9a0cec14-08db-11eb-3cfa-4d1c327c63f1
+using Plots, PlutoUI, StatsBase, Statistics
 
-# ╔═╡ 945c2bf1-d7dc-42c9-93d7-fd754f8fb1d7
+# ╔═╡ 41f7d874-8cb9-11eb-308d-47dea998f6bf
 html"""
 <div style="
 position: absolute;
@@ -46,9 +46,9 @@ font-feature-settings: 'lnum', 'pnum';
 "> <p style="
 font-size: 1.5rem;
 opacity: .8;
-"><em>Section 2.9</em></p>
+"><em>Section 3.1</em></p>
 <p style="text-align: center; font-size: 2rem;">
-<em> Optimization </em>
+<em> Time stepping </em>
 </p>
 
 <p style="
@@ -58,7 +58,7 @@ opacity: .8;
 "><em>Lecture Video</em></p>
 <div style="display: flex; justify-content: center;">
 <div  notthestyle="position: relative; right: 0; top: 0; z-index: 300;">
-<iframe src="https://www.youtube.com/embed/44RA9fclTdA" width=400 height=250  frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+<iframe src="https://www.youtube.com/embed/3Y5gVyO8KcI" width=400 height=250  frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 </div>
 </div>
 
@@ -68,342 +68,500 @@ overflow-x: hidden;
 }
 </style>"""
 
-# ╔═╡ b8d66df5-f593-40b4-8c46-3b638f9cc3e1
-TableOfContents()
+# ╔═╡ fb6cdc08-8b44-11eb-09f5-43c167aa53fd
+PlutoUI.TableOfContents()
 
-# ╔═╡ 77253dd5-a2c8-4cf5-890a-5c8420c395b7
+# ╔═╡ 6f871ac0-716d-4bf8-a067-c798869c103f
 md"""
-# Julia concepts
-
-- Named tuples
-- Functions of functions: when you run an optimization, you have a function and you try to put something around it
-- Optim package: entirely written in Julia
-- JuMP: Julia for Mathematical Programming (popular modelling language)
+# Modeling component failure: Discrete and continuous
 """
 
-# ╔═╡ dccbd53d-33ed-4d37-9d2c-da76e090d5dd
+# ╔═╡ ae243395-521b-4834-b61e-19501e54b41c
 md"""
-# Line Fitting Many Ways
+Let's think about a simple model for failure of components such as light bulbs. 
+(We actually derived this global, or macroscopic, model from a microscopic stochastic model a few lectures ago.)
+	
+Components can fail at any moment but we'll start off by checking once per day to count the number that have failed during that day. Then we'll check several times per day. This is still a **discrete** model. Finally we'll see how we can turn this into a **continuous** model where we can talk about the number that have failed by any real time $t$.
 """
 
-# ╔═╡ 235919f2-a4b0-4bb5-870c-82809a170195
+# ╔═╡ 8d2858a4-8c38-11eb-0b3b-61a913eed928
 md"""
-Last lecture we did some line fitting ("regression"). Let's see how we can actually solve that problem.
+## Checking failures once per day (integer time steps)
 """
 
-# ╔═╡ 2ed86f33-bced-413c-9a8d-c6e49bfe5afb
+# ╔═╡ e93c5f2f-d7c8-41ea-bdbb-7cf6587b6266
 md"""
-# Exploratory Data Analysis
-"""
 
-# ╔═╡ a78aff8d-5ac0-4915-92de-ffefdb08f88e
-md"""
-Let's start off by making some noisy data.
-"""
 
-# ╔═╡ 0e43a6d3-7198-422b-b50c-b9caeaa53074
-md"""
-n = $(@bind n Slider(3:10:200, show_value=true))
-"""
+Let's call $N_k$ the (average) number of bulbs that are still functioning on day number $k$, starting from an initial number $N_0$.
 
-# ╔═╡ f8c98995-2152-4d45-996a-a0532a233719
-x = sort((rand( -10:100, n)))
+We can find an equation for the number $N_{k+1}$ that are still functioning at the end of day number $k+1$ by working out how many *fail* on day $k+1$. 
 
-# ╔═╡ 8a5f1fdc-3cef-4c02-a73f-e5975b57b15a
-y = 5/9 .* x  .- 17.7777777  .+  5 .* randn.() #  same as y =  5/9 .* (x .- 32)
+Let's call $p$ the probability that each bulb fails each day. For example, if 10% of the bulbs fail each day then $p = 0.1$.
 
-# ╔═╡ 647093eb-a7e3-4175-8091-29c33407e5c9
-begin	
-	plot(x,y, m=:c, mc=:red, legend=false, ls=:dash)
-	xlabel!("°F")
-	ylabel!("°C")
-	# plot!( x, (x.-30)./2) Dave's cool approximation
-end
+If there are 100 bulbs and 10% fail on the first day, then 10 fail, so there will be 90 remaining. In general, if a proportion $p$ of the $N_k$ fail, in total we expect $p \, N_k$ to fail.
 
-# ╔═╡ cdc25782-65a8-43c5-8090-c1241b798b1a
-md"""
-# Least Squares fitting to a straight line
-"""
+Hence
 
-# ╔═╡ 9ec4dd43-c95a-4f11-b844-fd6ccc93bb68
-md"""
-Suppose we are given data $x_i$ and measurements $y_i$. **Least-squares fitting** a straight line means finding the best ``m`` (slope) and ``b`` (intercept) that minimize
-the "error" (distance from the data) in a least-squares sense:
-
-$$\min_{m,b} \sum  ( (b + m x_i) - y_i)^2$$ 
-"""
-
-# ╔═╡ 9276b315-27b2-4b01-8fc8-4ebbba58d080
-md"""
-# Direct Formulas
-"""
-
-# ╔═╡ d22fd4bd-acfe-4e27-a484-3c2d6138f44e
-md"""
-## The Statistician's formula
-"""
-
-# ╔═╡ da0d208b-7d30-470a-b180-4cbfa98298e7
-begin
-	m = cov(x,y)/var(x) # same as (x.-mean(x))⋅(y.-mean(y))/sum(abs2,x.-mean(x))
-	b = mean(y) - m * mean(x)
-	(b=b, m=m)
-end
-
-# ╔═╡ 6cf233a7-9b8b-47aa-a3ad-2440d001af73
-md"""
-### Julia: Named Tuples
-"""
-
-# ╔═╡ 613c3e5f-bbdd-4cf9-b30f-69e2c42ae0ec
-nt = (first=1, next=2, last=3.1) # kind of handy
-
-# ╔═╡ 4cce580b-0032-419c-b386-e470b084ab96
-typeof( nt )
-
-# ╔═╡ 5503b4de-0b53-4223-8ce0-5e014be3f7ab
-plot!(x -> m*x + b, lw=3, alpha=0.7)
-
-# ╔═╡ 05e512ca-3123-48d9-9c11-5d6e9d90ef95
-md"""
-## The Linear Algebraist's Formula
-"""
-
-# ╔═╡ 939900b4-5327-43b4-883f-740c173c0db4
-md"""
-This is even shorter, but you need to know linear algebra. But it also generalizes.
-"""
-
-# ╔═╡ e0b4c2a9-a68b-47af-bf9c-f1a9f0256fd4
-[one.(x) x]\y  # even shorter but you need to know linear algebra, but generalizes
-
-# ╔═╡ 6d25e38e-c18a-48b3-8b12-b670f5a5180f
-md"""
-# Optimization Methods
-
-Since the problem is an optimization problem, we can use optimization software to obtain an answer.  This is overkill for lines, but generalizes to so many nonlinear situations, including neural networks as in machine learning.
-"""
-
-# ╔═╡ f291c0cb-51ee-4b30-9e07-e7cf374f809e
-md"""
-## Optim.jl: A package written entirely in Julia for optimization
-"""
-
-# ╔═╡ aa06a447-d6c5-48ee-9864-c1f431fe5e4b
-md"""
-[Optim.jl Documentation](https://julianlsolvers.github.io/Optim.jl/stable/#)
-"""
-
-# ╔═╡ d3edfb26-7258-45a3-a88c-60831338df1f
-md"""
-We can  ask software to just solve the problem
-
-$$\min_{b,m} \sum_{i=1}^n  [ (b + m x_i) - y_i]^2$$
+$$N_{k+1} = N_k - p \, N_k$$
 
 or
-``\min_{b,m}``  `loss(b,m)`
+
+$$N_{k+1} - N_k = - p N_k.$$
+
+In this very simple model we can actually solve this recurrence relation analytically to find the number still functioning at time $t$:
+
+$$N_{k+1} = (1 - p) N_k$$
+
+so
+
+$$N_k = (1 - p) N_{k-1} = (1 - p)^2 N_{k-2} = \cdots$$
+
+hence
+
+$$N_k = N_0 \, (1 - p)^k.$$
 
 """
 
-# ╔═╡ 372b304a-3f57-4bec-88df-3d51ded57d5c
-loss( (b, m) ) = sum( (b + m*x[i] - y[i])^2  for i=1:n )
-
-# ╔═╡ 13b9ff38-225d-4ec1-be7f-bf0e0f5b4076
-result =  optimize(loss, [0.0,0.0] )  # optimize f with starting guess
-
-# ╔═╡ 7bd9bb8f-36c5-4ae1-ba20-25732d7fef2e
-result.minimizer
-
-# ╔═╡ 0af48ea2-698e-4919-aa96-97c5f46a928b
+# ╔═╡ 43f5ac88-7d07-429c-b27f-49908c30bdf9
 md"""
-### Functions of Functions and Computing Power
-
-Optimization such as 
-``\min_{b,m}``  `loss(b, m)`
-is an example of a fairly heavy function of a function.  By this we mean that the input is a *function* such as  `loss(b, m)` and the output is the location or value of a minimum, say.  By "heavy" we mean that typically a large amount of computing power is needed.
-
-Not that many years ago, computers were not strong enough for realistic problems.  Modern-day machine learning and so much more is enabled because computers can now surround entire codes with optimization, or if the software is compatible, automatic differentiation.  
+## Checking failures $n$ times per day
 """
 
-# ╔═╡ 10386ce6-82fd-46ea-a44a-6ba14c5b0cd9
+# ╔═╡ b70465ab-9c7c-4533-9539-b414ef54a892
 md"""
-## JuMP.jl: A popular modelling language for Optimization Problems
+Now suppose instead we ask how many light bulbs fail in *half* a day. If 10% fail per day, it's natural to think that 5% fail in half a day. 
 
-JuMP = Julia for Mathematical Programming
+However, this is not quite right due to the effect of **compounding** (as in compound interest). If 5% fail and then 5% of the remainder fail, then how many are left?
+
+
+
 """
 
-# ╔═╡ b7d8f11d-91ce-4b3a-87a1-1aa162e198ff
+# ╔═╡ 80c1a728-1784-4bb7-b2c3-e77b41929a78
+(1 - 0.05) * (1 - 0.05)
+
+# ╔═╡ a25cb8e6-f65d-4061-b90c-079814458c94
+md"""
+So slightly *fewer* than 10% in total have failed, due to the effect of compounding. Nonetheless, the result is approximately right, so let's take that.
+"""
+
+# ╔═╡ 4cc483e5-c322-44c8-83f1-802b6cb432aa
+md"""
+So let's suppose that $n$ times a day, a proportion $p / n$ fail (for example, 10% and twice a day gives 5% failing each time, approximately).
+
+Then the number remaining after the first failure check on day $k$ is
+"""
+
+# ╔═╡ 3ce501b4-76bc-49ab-b3b8-a41f29dbcc2b
+md"""
+$N_{k + \frac{1}{n}} = \textstyle (1 - \frac{p}{n}) N_k$
+
+Here we have used a subscript since we are in a discrete situation. We could also have written instead
+
+$$N(k + \textstyle \frac{1}{n}).$$
+
+The solution at the next day is
+
+$$N_{k+1} = N_k \, (1 - \textstyle \frac{p}{n})^n.$$
+
+And the full solution for the number remaining after $k$ days is
+
+$N_k = N_0 \, \textstyle (1 - \frac{p}{n})^{nk}$
+"""
+
+# ╔═╡ c539e622-d76d-489a-abb9-4ba47dfe9b90
+md"""
+Let's plot these to see what they look like:
+"""
+
+# ╔═╡ 95fe38c5-d717-47d0-8db7-5f8d53a6c6f1
+md"""
+n = $(n_slider = @bind n Slider(0:8, show_value=true))
+"""
+
+# ╔═╡ 2982c418-dad5-44cc-8194-5b607af84b16
+p = 0.4
+
+# ╔═╡ c97964d1-b5d2-4ee7-80cc-995b3f344aa1
 let
+	N0 = 100
+	T = 20
 	
-	n = length(x)
-	model = Model(Ipopt.Optimizer)
+	N = [N0 * (1 - p)^t for t in 0:T]
 	
-	@variable(model, b)
-	@variable(model, m)
-
-    @objective(model, Min, sum( (b + m*x[i] - y[i])^2 for i in 1:n) )
-
-	# set_silent(model)
-	optimize!(model)
+	plot(0:T, N, m=:o, alpha=0.5, ms=3, label="once daily", lw=2)
 	
-	(b=value(b), m=value(m))
+# 	N2 = [N0 * (1 - p5/2)^(t) for t in 0:2T]
+# 	plot!(0:0.5:T, N2, m=:o, alpha=0.5, ms=2, label="twice a day")
+	
+# 	N4 = [N0 * (1 - p5/4)^(t) for t in 0:4T]
+# 	plot!(0:0.25:T, N4, m=:o, alpha=0.5, ms=2, label="four times a day")
+	
+	N = [N0 * (1 - p/(2^n))^(t) for t in 0:(2^n)*T]
+	plot!(0:(2.0^(-n)):T, N, m=:o, alpha=0.5, ms=2, label="$(2^n) times per day")
+	
+	xlabel!("days (k)")
+	ylabel!("N_k")
+	
+	title!("$(2^n) times per day")
+	
+	
+	# plot!(t -> N0 * exp(-p5 * t))
 end
 
-# ╔═╡ 5ca85768-a19e-4ddf-89a4-88dca599d7a7
+# ╔═╡ ba121b40-2bfc-42d4-81ee-5f90e18ec8de
 md"""
-# Gradients
+## Continuous time 
 """
 
-# ╔═╡ dd39b088-f59f-43fa-bce0-5076398238f9
+# ╔═╡ 74892ec6-6639-469d-8711-5039a140d833
 md"""
-The above optimization methods made no explicit mention of derivative or gradient information.  For simple problems, gradients can be hand calculated, but for many real problems this is impractical.
+Thinking back to the class on "discrete to continuous", we see that we are producing more and more discrete values to keep track of, but after a while the curve they trace out does not really change. It thus makes sense to define a **limiting object**, which is what would happen if you could take smaller and smaller time steps in the right way, i.e. take the limit as $n \to \infty$. 
+
+In that case we could imagine being able to calculate the (average) number $N(t)$
+of bulbs that are functioning at time $t$, where $t$ can be *any* positive real number.
+
+
 """
 
-# ╔═╡ 5f41acf0-22bd-4224-a65a-81bd656e1c07
+# ╔═╡ fc6899d3-ea18-487a-add1-20be86ce9c74
 md"""
-### Hand Computation
+In calculus we learn ways to see that
 """
 
-# ╔═╡ 84f3a912-031c-40ed-ae29-02bbcc7b4612
+# ╔═╡ 75a60bcf-3f77-49fb-a7ee-db4580aae6f3
 md"""
-``  \frac{\partial}{\partial b}\sum_{i=1}^n  ( (b + m x_i) - y_i)^2 
-=   2\sum_{i=1}^n  ( (b + m x_i) - y_i) `` 
-
-
-``   \frac{\partial}{\partial m }\sum_{i=1}^n  ( (b + m x_i) - y_i)^2 
-=   2\sum_{i=1}^n  x_i( (b + m x_i) - y_i) `` 
+$(1 - p/n)^n$ converges to $\exp(-p)$ as $n \to \infty$.
 """
 
-# ╔═╡ 6f64ede7-612e-47b3-b3a4-d22a1992a98d
+# ╔═╡ 786beb46-d175-44b3-a63e-057150e53c66
+md"""
+An alternative approach is to look at the time evolution in terms of *differences*. In a time $1/n$ a proportion $p/n$ decays. Here we are thinking of $\delta t = 1/n$ as the **time step** between consecutive checks. If there are $N(t)$ bulbs functioning at a time $t$ and we take a small time  step of general length $\delta t$, a proportion $p \, \delta t$ should fail, so that
+"""
+
+# ╔═╡ 2d9f3aad-1d41-4918-a128-47dc58b667e3
+md"""
+$N(t + \delta t) - N(t) = -(p \, \delta t) \, N(t).$
+"""
+
+# ╔═╡ 17a23094-3975-49f4-8c7f-03fbc8afbbf2
+md"""
+Dividing through by $\delta t$ we find
+"""
+
+# ╔═╡ eaf6f4eb-b367-492e-a1be-81f9455252c4
+md"""
+$$\frac{N(t + \delta t) - N(t)}{\delta t} = -p \, N(t).$$
+
+"""
+
+# ╔═╡ 51c226b9-ab3d-46b4-a963-3548ad715d85
+md"""
+We now recognise the left-hand side of the equation: if we take the limit as $\delta t \to 0$, we have exactly the definition of  the **derivative** $\frac{dN(t)}{dt}$.
+
+Hence, taking that limit we obtain
+"""
+
+# ╔═╡ 6c527098-ab53-4862-bda6-0c11b1564a11
+md"""
+$$\frac{dN(t)}{dt} = - p \, N(t)$$
+
+with $N(0) = N_0$, the initial number.
+
+This is an **ordinary differential equation**: it is an equation relating the value of the function $N(t)$ at time $t$ to the derivative (slope) of that function at that point. This relationship must hold for all $t$. It is not obvious that this equation even makes sense (although it should do, given the way we have derived it), but in differential equations courses we see that it does make sense (under some technical conditions), and uniquely specifies a function satisfying the ODE together with the initial condition. (This is called an "initial-value problem".)
+"""
+
+# ╔═╡ 3c2b2f03-522c-40a0-ac1d-8054fe8e3fa2
+md"""
+In this particular case, once again we are lucky enough to be able to solve this equation analytically:  $N(t)$ is a function whose derivative is a multiple of the same function, and hence it must be exponential:
+"""
+
+# ╔═╡ 5cec433e-ee71-44b5-b5d6-3feab80fa535
+md"""
+$N(t) = N_0 \exp(-p \, t)$
+"""
+
+# ╔═╡ 96b02ce7-ce16-4276-a147-ba94d7a2e160
+md"""
+This is an alternative way to define the exponential function. We can add this to the above plot:
+"""
+
+# ╔═╡ d952db33-1f82-42f5-96af-8038c256715b
+n_slider
+
+# ╔═╡ 2b9276dc-fcca-4469-a62c-028a9eb3c2a9
+let
+	N0 = 100
+	T = 20
+	
+	N = [N0 * (1 - p)^t for t in 0:T]
+	
+	plot(0:T, N, m=:o, alpha=0.5, ms=3, label="once daily", lw=2)
+	
+# 	N2 = [N0 * (1 - p5/2)^(t) for t in 0:2T]
+# 	plot!(0:0.5:T, N2, m=:o, alpha=0.5, ms=2, label="twice a day")
+	
+# 	N4 = [N0 * (1 - p5/4)^(t) for t in 0:4T]
+# 	plot!(0:0.25:T, N4, m=:o, alpha=0.5, ms=2, label="four times a day")
+	
+	N = [N0 * (1 - p/(2^n))^(t) for t in 0:(2^n)*T]
+	plot!(0:(2.0^(-n)):T, N, m=:o, alpha=0.5, ms=2, label="$(2^n) times per day")
+	
+	xlabel!("days (k)")
+	ylabel!("N_k")
+	
+	title!("$(2^n) times per day")
+	
+	
+	plot!(t -> N0 * exp(-p * t), label="continuous", lw=2)
+end
+
+# ╔═╡ 754fe8c1-7021-48e8-9523-d5b22d0af93f
+md"""
+We see graphically that this is indeed the correct limiting curve.
+"""
+
+# ╔═╡ ccb35ad7-db20-46fa-abff-a6e88ef999e0
+md"""
+In this context, $p$ is called a **rate**; it is a *probability per unit time*, i.e. a ratio of probability and time. (To get the probability of decaying in a time $\delta t$, we *multiplied* $p$ by $\delta t$.)
+"""
+
+# ╔═╡ d03d9bfc-20ea-49bc-bc7b-df22cc240ffe
+md"""
+Let's summarise what we have found:
+"""
+
+# ╔═╡ dde3ffc7-b333-4305-b8e7-9888e4512c41
+md"""
+| Step type   | Time stepping     |  Difference    |   Solution  |
+| ----------- | :-----------: | :-----------:  | :-----------: |
+| Integer            | $N_{k+1} = (1 - p) N_k$  |  $N_{k+1} - N_k = -p N_k$  | $N_k = N_0 (1 - p)^k$
+| Rational |  $N_{k + \frac{1}{n}} = \textstyle (1 - \frac{p}{n}) N_k$ | $N_{k + \frac{1}{n}} - N_k = \textstyle (- \frac{p}{n}) N_k$   | $N_k = N_0 (1 - \frac{p}{n})^{n k}$ 
+| Continuous   | $N(t + \delta t) = (1 - p \, \delta t) N(t)$         |  $\frac{dN(t)}{dt} = - p \, N(t)$  |  $N(t) = N_0 \exp(-p \, t)$
+
+"""
+
+# ╔═╡ d74bace6-08f4-11eb-2a6b-891e52952f57
+md"""
+# SIR model
+"""
+
+# ╔═╡ 76268535-e232-4e02-97cd-cf9b3ddec256
+md"""
+
+Let's look at a more complicated example, the **SIR** model of the spread of an epidemic, or of a rumour, in a population. You are surely familiar with models of this type modelling the spread of COVID-19, and from the homework.
+
+As in the homework, we can make a fully discrete, stochastic agent-based model, where we give microscopic rules specifying how individual agents interact with one another. When we run such models with large enough systems, we observe that the results are often quite smooth. An alternative approach is to try to write down macroscopic discrete equations that describe the dynamics of averages. 
+
+Often it is easier to understand the behaviour of such systems by formulating a continuous version of the model. Some people make discrete models because they're not happy with continuous models; large discrete models can also be computationally wasteful. On the other hand, they can also include effects that might be more difficult to model in a continuous framework, e.g. non-local effects or things that "don't become continuous very well". 
+"""
+
+# ╔═╡ 11e24e1d-39db-4b7e-96db-50458def72af
+md"""
+## Discrete-time SIR model
+"""
+
+# ╔═╡ dbdf2812-08f4-11eb-25e7-811522b24627
+md"""
+First let's think about the SI model: agents can be susceptible (S) and infectious (I). A susceptible person becomes infectious when they come into contact with an infectious person, with some probability.
+"""
+
+# ╔═╡ 238f0716-0903-11eb-1595-df71600f5de7
+md"""
+Let's call $S_t$ and $I_t$ be the number of susceptible and infectious people at time $t$, respectively, and let's call $N$ the total number of people.
+
+Let's suppose that at each time step, each infectious person has the chance to interact with one other person (on average). That person will be chosen at random from the total population of size $N$. A new infection occurs only if that chosen person is susceptible, which happens with probability $S_t / N$, and only if the infection attempt is successful, with probability $b$, say.
+
+Hence the change in the number of infectious people after that step is
+"""
+
+# ╔═╡ 8e771c8a-0903-11eb-1e34-39de4f45412b
+md"""
+$$\Delta I_t = I_{t+1} - I_t = b \, I_t \, \left(\frac{S_t}{N} \right)$$
+"""
+
+# ╔═╡ fb52c62d-15d3-46a2-8e3d-2de20c68ded4
+md"""
+The decrease in $S_t$ is also given by $\Delta I_t$.
+"""
+
+# ╔═╡ e83fc5b8-0904-11eb-096b-8da3a1acba12
+md"""
+There is also recovery, with a constant probability $c$ at each step, once you are infectious.
+
+It is useful to normalize by $N$, so we define the proportions of the population that are susceptible, infectious and recovered as
+
+$$s_t := \frac{S_t}{N}; \quad i_t := \frac{I_t}{N}; \quad r_t := \frac{R_t}{N}.$$
+"""
+
+# ╔═╡ d1fbea7a-0904-11eb-377d-690d7a16aa7b
+md"""
+Including recovery with probability $c$ we obtain the **discrete-time SIR model**:
+"""
+
+# ╔═╡ dba896a4-0904-11eb-3c47-cbbf6c01e830
+md"""
+$$\begin{align}
+s_{t+1} &= s_t - b \, s_t \, i_t \\
+i_{t+1} &= i_t + b \, s_t \, i_t - c \, i_t\\
+r_{t+1} &= r_t + c \, i_t
+\end{align}$$
+"""
+
+# ╔═╡ cea2dcfb-b1eb-4269-81d7-8596969e9bd6
+md"""
+## Continuous-time SIR model
+"""
+
+# ╔═╡ 08d166f1-3af0-45a8-bcad-6ee958497453
+md"""
+We can now go through the same process as with the failure model, where we take time steps of length $\delta t$ instead, and replace probabilities $b$ and $c$ with *rates* $\beta$ and $\gamma$. Taking the limit $\delta t \to 0$ we get
+"""
+
+# ╔═╡ 72061c66-090d-11eb-14c0-df619958e2b6
+md"""
+$$\begin{align}
+\frac{ds(t)}{dt} &= -\beta \, s(t) \, i(t) \\
+\frac{di(t)}{dt} &= +\beta \, s(t) \, i(t) &- \gamma \, i(t)\\
+\frac{dr(t)}{dt} &= &+ \gamma \, i(t)
+\end{align}$$
+"""
+
+# ╔═╡ c07367be-0987-11eb-0680-0bebd894e1be
+md"""
+We can think of this as a model of a chemical reaction with species S, I and R. The term $s(t) i(t)$ is known as the [**mass action**](https://en.wikipedia.org/wiki/Law_of_mass_action) form of interaction.
+
+Note that no analytical solutions of these (simple) nonlinear ODEs are known as a function of time! (However, [parametric solutions are known](https://arxiv.org/abs/1403.2160).)
+"""
+
+# ╔═╡ f8a28ba0-0915-11eb-12d1-336f291e1d84
+md"""
+Below is an example simulation of the discrete-time model. 
+"""
+
+# ╔═╡ d994e972-090d-11eb-1b77-6d5ddb5daeab
 begin
-	∇loss(b,m,i) = 2*(b+m*x[i]-y[i]) .* [1,x[i]] # ith summand
-	∇loss(b,m) = sum(∇loss(b,m,i) for i=1:n)
+	NN = 100
 	
+	SS = NN - 1
+	II = 1
+	RR = 0
 end
 
-# ╔═╡ 36300b71-5a96-4964-b661-93de5631cf07
-md"""
-### Finite Difference Evaluation
-"""
+# ╔═╡ 050bffbc-0915-11eb-2925-ad11b3f67030
+ss, ii, rr = SS/NN, II/NN, RR/NN
 
-# ╔═╡ ad578b33-4387-49f5-b39d-92e05fca4ea5
-∇loss(.1,.3)
+# ╔═╡ 1d0baf98-0915-11eb-2f1e-8176d14c06ad
+p_infection, p_recovery = 0.1, 0.01
 
-# ╔═╡ 67fd90d7-bb34-411f-89f1-a410e6fb29ba
-begin # finite difference
-	ϵ = .000000001
-	([loss([.1+ϵ ,.3]);loss([.1 ,.3+ϵ])] .- loss([.1 ,.3])) ./ ϵ
-end
+# ╔═╡ 28e1ec24-0915-11eb-228c-4daf9abe189b
+TT = 1000
 
-# ╔═╡ 3e229e4a-a697-460e-b995-a4773a6aca70
-md"""
-### Automatic Differentiation (AutoDiff)
- We're all so good at calculus I suppose, but nothing like letting the computer do it.  For real problems, what you learned in calculus is impractical. Note: Autodiff is not finite differences.  It is not as problematic as finite differences is in that
-with finite differences it can be hard to know which ϵ to use, etc.
-"""
+# ╔═╡ 349eb1b6-0915-11eb-36e3-1b9459c38a95
+function discrete_SIR(s0, i0, r0, T=1000)
 
-# ╔═╡ 7566cb7e-f5da-4b81-af07-bf2c86963333
-∇loss(.1,.3) # hand computation
-
-# ╔═╡ e6d9aafd-fbd6-4ec4-a4a1-740a4e889dc5
-ForwardDiff.gradient( loss, [.1,.3])
-
-# ╔═╡ c9417d90-a9cb-4655-a258-8a8898e5576a
-md"""
-# Gradient Descent can be difficult for complicated functions
-"""
-
-# ╔═╡ 6535280a-e0ce-4e13-86dd-165d5f06cfe7
-let
-	b, m = 0, 0  # starting guess
+	s, i, r = s0, i0, r0
 	
-	for i=1:25
-		db, dm = ∇loss(b,m)
+	results = [(s=s, i=i, r=r)]
+	
+	for t in 1:T
+
+		Δi = p_infection * s * i
+		Δr = p_recovery * i
 		
-		# Getting a good step size can be really hard
-		# I worked out the line search η by hand
-		η = sum( (b+m*x[i]-y[i])*(db+dm*x[i]) for i=1:n)/sum( (db+dm*x[i])^2 for i=1:n)
-		
-		b, m  = (b, m) .- η .* (db, dm)
+		s_new = s - Δi
+		i_new = i + Δi - Δr
+		r_new = r      + Δr
+
+		push!(results, (s=s_new, i=i_new, r=r_new))
+
+		s, i, r = s_new, i_new, r_new
 	end
-	(b=b, m=m)
 	
+	return results
 end
 
-# ╔═╡ 4c285bc2-b3c2-4d20-a904-ecaa07795342
-md"""
-Hoping for:
-"""
+# ╔═╡ 39c24ef0-0915-11eb-1a0e-c56f7dd01235
+SIR = discrete_SIR(ss, ii, rr)
 
-# ╔═╡ a148e17a-1bc6-4b8b-b060-0b5dce387e6e
-b, m
-
-# ╔═╡ 592397eb-ec52-423b-925b-d8becb9eac8e
-md"""
-# Stochastic Gradient Descent
-
-Pick one term of the sum (or a few of them) and update according to the
-respective gradient. This is what works in machine learning.
-"""
-
-# ╔═╡ 7086950b-c8db-49d4-b095-15be91c73b56
-let
-	b, m  = 0.0, 0.0
-	for t=1:10_000_000
-	    η = .00002  # there seems to be an art to picking these steplengths
-	 
-	    b, m  =  (b, m) .- η *∇loss(b,m, rand(1:n))
-	   
-	end
-   	(b=b, m=m)
+# ╔═╡ 442035a6-0915-11eb-21de-e11cf950f230
+begin
+	ts = 1:length(SIR)
+	discrete_time_SIR_plot = plot(ts, [x.s for x in SIR], 
+		m=:o, label="S", alpha=0.2, linecolor=:blue, leg=:right, size=(400, 300))
+	plot!(ts, [x.i for x in SIR], m=:o, label="I", alpha=0.2)
+	plot!(ts, [x.r for x in SIR], m=:o, label="R", alpha=0.2)
+	
+	xlims!(0, 500)
 end
 
-# ╔═╡ 327514f1-8081-4a6c-8be4-8ffd52ed3c46
+# ╔═╡ 5f5d7332-b5f8-4d05-971b-ec0564f1339b
 md"""
-# Bells and Whistles for optim.jl
+# Time stepping: The Euler method
 """
 
-# ╔═╡ 98e00b2d-0802-4160-8e5c-302be5226916
-optimize(loss, [0.0,0.0], BFGS(),  autodiff=:forward)
+# ╔═╡ 7cf51986-5983-4094-a18f-f95f2f6993da
+md"""
+Above we showed how we can think of Ordinary Differential Equations (ODEs) as arising in a natural way from discrete-time models where we take time steps.
 
-# ╔═╡ ef165ca5-bf4f-465e-8e9a-df1aec2d7caa
-optimize(loss, [0.0,0.0], BFGS() )
+What about if somebody gives us an ODE -- how should we solve it numerically?
 
-# ╔═╡ 0305b418-51bb-47bb-98fb-319fc26b94cf
-optimize(loss, [0.0,0.0], GradientDescent() )
+In fact, we do the reverse process: We **discretize** the equation and reduce it to a system where we take time steps!
 
-# ╔═╡ 304a3a6e-c8c3-48d8-a101-313b3aa062f2
-optimize(loss, [0.0,0.0], GradientDescent(), autodiff=:forward )
+Suppose the differential equation is
+
+$$\dot{x} = f(x)$$
+
+The simplest such method is the **Euler method**: we approximate the derivative using a small (but not *too* small) time step $h$ (what we called $\delta t$ above):
+
+$$\dot{x} \simeq \frac{x(t + h) - x(t)}{h}$$
+
+giving
+
+$$x(t + \delta t) \simeq x(t) + h \, f(x).$$ 
+
+The Euler method with constant time step is then the following algorithm:
+
+$$x_{k+1} = x_k + h \, f(x_k)$$
+
+If we have several variables in our ODE, we can wrap the variables up into a vector and use the *same* method: for the ODE
+
+$$\dot{\mathbf{x}} = \mathbf{f}(\mathbf{x})$$
+
+the Euler method becomes
+
+$$\mathbf{x}_{k+1} = \mathbf{x}_k + h \, \mathbf{f}(\mathbf{x}_k),$$
+
+where $\mathbf{f}$ denotes is a vector-valued function mapping the vector of variables to the vector of right-hand sides of the ODEs.
+
+
+"""
+
+# ╔═╡ 763bbb15-c52e-4159-99b7-f3d17f47d56a
+md"""
+However, in general the Euler method is *not* a good algorithm to simulate the dynamics of an ODE! We can see why that might be from the graphs at the start of this notebook: taking time steps like this actually does a *bad* job at approximating the continuous curve. Numerical analysis courses show how to design better numerical methods to approximate the true solution of an ODE more accurately.
+
+The Julia [SciML / DifferentialEquations.jl](https://diffeq.sciml.ai/stable/tutorials/ode_example/) ecosystem provides a large suite of methods for solving ODEs and many other types of differential equations using state-of-the-art methods.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-Ipopt = "b6b21f68-93f8-5de0-b562-5493be1d77c9"
-JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
-Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-ForwardDiff = "~0.10.28"
-Ipopt = "~1.0.2"
-JuMP = "~1.0.0"
-Optim = "~1.7.0"
 Plots = "~1.29.0"
 PlutoUI = "~0.7.38"
+StatsBase = "~0.33.16"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
-
-[[ASL_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "6252039f98492252f9e47c312c8ffda0e3b9e78d"
-uuid = "ae81ac8f-d209-56e5-92de-9978fef736f9"
-version = "0.1.3+0"
 
 [[AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -420,23 +578,11 @@ version = "3.3.3"
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
-[[ArrayInterface]]
-deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
-git-tree-sha1 = "81f0cb60dc994ca17f68d9fb7c942a5ae70d9ee4"
-uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "5.0.8"
-
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
-
-[[BenchmarkTools]]
-deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
-git-tree-sha1 = "4c10eee4af024676200bc7752e536f858c6b8f93"
-uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-version = "1.3.1"
 
 [[Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -450,12 +596,6 @@ git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
 
-[[Calculus]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
-uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
-version = "0.5.1"
-
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "9950387274246d08af38f6eef8cb5480862a435f"
@@ -467,18 +607,6 @@ deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
 git-tree-sha1 = "1e315e3f4b0b7ce40feded39c73049692126cf53"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.3"
-
-[[CodecBzip2]]
-deps = ["Bzip2_jll", "Libdl", "TranscodingStreams"]
-git-tree-sha1 = "2e62a725210ce3c3c2e1a3080190e7ca491f18d7"
-uuid = "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
-version = "0.7.2"
-
-[[CodecZlib]]
-deps = ["TranscodingStreams", "Zlib_jll"]
-git-tree-sha1 = "ded953804d019afa9a3f98981d99b33e3db7b6da"
-uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
-version = "0.7.0"
 
 [[ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Random"]
@@ -503,12 +631,6 @@ deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
 git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
-
-[[CommonSubexpressions]]
-deps = ["MacroTools", "Test"]
-git-tree-sha1 = "7b8a93dba8af7e3b42fecabf646260105ac373f7"
-uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
-version = "0.3.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
@@ -550,18 +672,6 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
-[[DiffResults]]
-deps = ["StaticArrays"]
-git-tree-sha1 = "c18e98cba888c6c25d1c3b048e4b3380ca956805"
-uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
-version = "1.0.3"
-
-[[DiffRules]]
-deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
-git-tree-sha1 = "28d605d9a0ac17118fe2c5e9ce0fbb76c3ceb120"
-uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "1.11.0"
-
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -600,18 +710,6 @@ git-tree-sha1 = "d8a578692e3077ac998b50c0217dfd67f21d1e5f"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.0+0"
 
-[[FillArrays]]
-deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "246621d23d1f43e3b9c368bf3b72b2331a27c286"
-uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.13.2"
-
-[[FiniteDiff]]
-deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "51c8f36c81badaa0e9ec405dcbabaf345ed18c84"
-uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
-version = "2.11.1"
-
 [[FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
@@ -629,12 +727,6 @@ deps = ["Printf"]
 git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
 uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.4.2"
-
-[[ForwardDiff]]
-deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
-git-tree-sha1 = "7a380de46b0a1db85c59ebbce5788412a39e4cb7"
-uuid = "f6369f11-7733-5829-9624-2563aa707210"
-version = "0.10.28"
 
 [[FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
@@ -725,11 +817,6 @@ git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.2"
 
-[[IfElse]]
-git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
-uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
-version = "0.1.1"
-
 [[IniFile]]
 git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
 uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
@@ -744,18 +831,6 @@ deps = ["Test"]
 git-tree-sha1 = "336cc738f03e069ef2cac55a104eb823455dca75"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.4"
-
-[[Ipopt]]
-deps = ["Ipopt_jll", "MathOptInterface"]
-git-tree-sha1 = "8b7b5fdbc71d8f88171865faa11d1c6669e96e32"
-uuid = "b6b21f68-93f8-5de0-b562-5493be1d77c9"
-version = "1.0.2"
-
-[[Ipopt_jll]]
-deps = ["ASL_jll", "Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "MUMPS_seq_jll", "OpenBLAS32_jll", "Pkg"]
-git-tree-sha1 = "e3e202237d93f18856b6ff1016166b0f172a49a8"
-uuid = "9cc047cb-c261-5740-88fc-0cf96f7bdcc7"
-version = "300.1400.400+0"
 
 [[IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
@@ -789,12 +864,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.2+0"
-
-[[JuMP]]
-deps = ["Calculus", "DataStructures", "ForwardDiff", "LinearAlgebra", "MathOptInterface", "MutableArithmetics", "NaNMath", "OrderedCollections", "Printf", "SparseArrays", "SpecialFunctions"]
-git-tree-sha1 = "936e7ebf6c84f0c0202b83bb22461f4ebc5c9969"
-uuid = "4076af6c-e467-56ae-b986-b466b2749572"
-version = "1.0.0"
 
 [[LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -892,12 +961,6 @@ git-tree-sha1 = "7f3efec06033682db852f8b3bc3c1d2b0a0ab066"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
 version = "2.36.0+0"
 
-[[LineSearches]]
-deps = ["LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "Printf"]
-git-tree-sha1 = "f27132e551e959b3667d8c93eae90973225032dd"
-uuid = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
-version = "7.1.1"
-
 [[LinearAlgebra]]
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -911,18 +974,6 @@ version = "0.3.15"
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
-[[METIS_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "1d31872bb9c5e7ec1f618e8c4a56c8b0d9bddc7e"
-uuid = "d00139f3-1899-568f-a2f0-47f597d42d70"
-version = "5.1.1+0"
-
-[[MUMPS_seq_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "METIS_jll", "OpenBLAS32_jll", "Pkg"]
-git-tree-sha1 = "29de2841fa5aefe615dea179fcde48bb87b58f57"
-uuid = "d7ed1dd3-d0ae-5e8e-bfb4-87a502085b8d"
-version = "5.4.1+0"
-
 [[MacroTools]]
 deps = ["Markdown", "Random"]
 git-tree-sha1 = "3d3e902b31198a27340d0bf00d6ac452866021cf"
@@ -932,12 +983,6 @@ version = "0.5.9"
 [[Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
-
-[[MathOptInterface]]
-deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "JSON", "LinearAlgebra", "MutableArithmetics", "OrderedCollections", "Printf", "SparseArrays", "Test", "Unicode"]
-git-tree-sha1 = "23c99cadd752cc0b70d4c74c969a679948b1bb6a"
-uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-version = "1.2.0"
 
 [[MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "Random", "Sockets"]
@@ -966,22 +1011,10 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
-[[MutableArithmetics]]
-deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "ba8c0f8732a24facba709388c74ba99dcbfdda1e"
-uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.0.0"
-
-[[NLSolversBase]]
-deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
-git-tree-sha1 = "50310f934e55e5ca3912fb941dec199b49ca9b68"
-uuid = "d41bc354-129a-5804-8e4c-c37616107c6c"
-version = "7.8.2"
-
 [[NaNMath]]
-git-tree-sha1 = "b086b7ea07f8e38cf122f5016af580881ac914fe"
+git-tree-sha1 = "737a5957f387b17e74d4ad2f440eb330b39a62c5"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
-version = "0.3.7"
+version = "1.0.0"
 
 [[NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
@@ -991,12 +1024,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "887579a3eb005446d514ab7aeac5d1d027658b8f"
 uuid = "e7412a2a-1a6e-54c0-be00-318e2571c051"
 version = "1.3.5+1"
-
-[[OpenBLAS32_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "9c6c2ed4b7acd2137b878eb96c68e63b76199d0f"
-uuid = "656ef2d0-ae68-5445-9ca0-591084a874a2"
-version = "0.3.17+0"
 
 [[OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -1018,12 +1045,6 @@ git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.5+0"
 
-[[Optim]]
-deps = ["Compat", "FillArrays", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
-git-tree-sha1 = "7a28efc8e34d5df89fc87343318b0a8add2c4021"
-uuid = "429524aa-4258-5aef-a3af-852621145aeb"
-version = "1.7.0"
-
 [[Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "51a08fb14ec28da2ec7a927c4337e4332c2a4720"
@@ -1040,12 +1061,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
 uuid = "2f80f16e-611a-54ab-bc61-aa92de5b98fc"
 version = "8.44.0+0"
-
-[[Parameters]]
-deps = ["OrderedCollections", "UnPack"]
-git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
-uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-version = "0.12.3"
 
 [[Parsers]]
 deps = ["Dates"]
@@ -1087,12 +1102,6 @@ git-tree-sha1 = "670e559e5c8e191ded66fa9ea89c97f10376bb4c"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.38"
 
-[[PositiveFactorizations]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "17275485f373e6673f7e7f97051f703ed5b15b20"
-uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
-version = "0.2.4"
-
 [[Preferences]]
 deps = ["TOML"]
 git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
@@ -1102,10 +1111,6 @@ version = "1.3.0"
 [[Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-
-[[Profile]]
-deps = ["Printf"]
-uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
 [[Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
@@ -1190,12 +1195,6 @@ git-tree-sha1 = "5ba658aeecaaf96923dce0da9e703bd1fe7666f9"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.1.4"
 
-[[Static]]
-deps = ["IfElse"]
-git-tree-sha1 = "5309da1cdef03e95b73cd3251ac3a39f887da53e"
-uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.6.4"
-
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
 git-tree-sha1 = "cd56bf18ed715e8b09f06ef8c6b781e6cdc49911"
@@ -1254,12 +1253,6 @@ version = "0.1.1"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
-[[TranscodingStreams]]
-deps = ["Random", "Test"]
-git-tree-sha1 = "216b95ea110b5972db65aa90f88d8d89dcb8851c"
-uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.9.6"
-
 [[Tricks]]
 git-tree-sha1 = "6bac775f2d42a611cdfcd1fb217ee719630c4175"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
@@ -1273,11 +1266,6 @@ version = "1.3.0"
 [[UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-
-[[UnPack]]
-git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
-uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
-version = "1.0.2"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -1509,61 +1497,66 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╟─945c2bf1-d7dc-42c9-93d7-fd754f8fb1d7
-# ╠═400ebe26-0dea-4cf2-8744-6c73a45cd33e
-# ╠═b8d66df5-f593-40b4-8c46-3b638f9cc3e1
-# ╟─77253dd5-a2c8-4cf5-890a-5c8420c395b7
-# ╟─dccbd53d-33ed-4d37-9d2c-da76e090d5dd
-# ╟─235919f2-a4b0-4bb5-870c-82809a170195
-# ╟─2ed86f33-bced-413c-9a8d-c6e49bfe5afb
-# ╟─a78aff8d-5ac0-4915-92de-ffefdb08f88e
-# ╟─0e43a6d3-7198-422b-b50c-b9caeaa53074
-# ╠═f8c98995-2152-4d45-996a-a0532a233719
-# ╠═8a5f1fdc-3cef-4c02-a73f-e5975b57b15a
-# ╠═647093eb-a7e3-4175-8091-29c33407e5c9
-# ╟─cdc25782-65a8-43c5-8090-c1241b798b1a
-# ╟─9ec4dd43-c95a-4f11-b844-fd6ccc93bb68
-# ╟─9276b315-27b2-4b01-8fc8-4ebbba58d080
-# ╟─d22fd4bd-acfe-4e27-a484-3c2d6138f44e
-# ╠═da0d208b-7d30-470a-b180-4cbfa98298e7
-# ╟─6cf233a7-9b8b-47aa-a3ad-2440d001af73
-# ╠═613c3e5f-bbdd-4cf9-b30f-69e2c42ae0ec
-# ╠═4cce580b-0032-419c-b386-e470b084ab96
-# ╠═5503b4de-0b53-4223-8ce0-5e014be3f7ab
-# ╟─05e512ca-3123-48d9-9c11-5d6e9d90ef95
-# ╟─939900b4-5327-43b4-883f-740c173c0db4
-# ╠═e0b4c2a9-a68b-47af-bf9c-f1a9f0256fd4
-# ╟─6d25e38e-c18a-48b3-8b12-b670f5a5180f
-# ╟─f291c0cb-51ee-4b30-9e07-e7cf374f809e
-# ╟─aa06a447-d6c5-48ee-9864-c1f431fe5e4b
-# ╟─d3edfb26-7258-45a3-a88c-60831338df1f
-# ╠═372b304a-3f57-4bec-88df-3d51ded57d5c
-# ╠═13b9ff38-225d-4ec1-be7f-bf0e0f5b4076
-# ╠═7bd9bb8f-36c5-4ae1-ba20-25732d7fef2e
-# ╟─0af48ea2-698e-4919-aa96-97c5f46a928b
-# ╟─10386ce6-82fd-46ea-a44a-6ba14c5b0cd9
-# ╠═b7d8f11d-91ce-4b3a-87a1-1aa162e198ff
-# ╟─5ca85768-a19e-4ddf-89a4-88dca599d7a7
-# ╟─dd39b088-f59f-43fa-bce0-5076398238f9
-# ╟─5f41acf0-22bd-4224-a65a-81bd656e1c07
-# ╟─84f3a912-031c-40ed-ae29-02bbcc7b4612
-# ╠═6f64ede7-612e-47b3-b3a4-d22a1992a98d
-# ╟─36300b71-5a96-4964-b661-93de5631cf07
-# ╠═ad578b33-4387-49f5-b39d-92e05fca4ea5
-# ╠═67fd90d7-bb34-411f-89f1-a410e6fb29ba
-# ╟─3e229e4a-a697-460e-b995-a4773a6aca70
-# ╠═7566cb7e-f5da-4b81-af07-bf2c86963333
-# ╠═e6d9aafd-fbd6-4ec4-a4a1-740a4e889dc5
-# ╟─c9417d90-a9cb-4655-a258-8a8898e5576a
-# ╠═6535280a-e0ce-4e13-86dd-165d5f06cfe7
-# ╟─4c285bc2-b3c2-4d20-a904-ecaa07795342
-# ╠═a148e17a-1bc6-4b8b-b060-0b5dce387e6e
-# ╟─592397eb-ec52-423b-925b-d8becb9eac8e
-# ╠═7086950b-c8db-49d4-b095-15be91c73b56
-# ╟─327514f1-8081-4a6c-8be4-8ffd52ed3c46
-# ╠═98e00b2d-0802-4160-8e5c-302be5226916
-# ╠═ef165ca5-bf4f-465e-8e9a-df1aec2d7caa
-# ╠═0305b418-51bb-47bb-98fb-319fc26b94cf
-# ╠═304a3a6e-c8c3-48d8-a101-313b3aa062f2
+# ╟─41f7d874-8cb9-11eb-308d-47dea998f6bf
+# ╠═9a0cec14-08db-11eb-3cfa-4d1c327c63f1
+# ╠═fb6cdc08-8b44-11eb-09f5-43c167aa53fd
+# ╟─6f871ac0-716d-4bf8-a067-c798869c103f
+# ╟─ae243395-521b-4834-b61e-19501e54b41c
+# ╟─8d2858a4-8c38-11eb-0b3b-61a913eed928
+# ╟─e93c5f2f-d7c8-41ea-bdbb-7cf6587b6266
+# ╟─43f5ac88-7d07-429c-b27f-49908c30bdf9
+# ╟─b70465ab-9c7c-4533-9539-b414ef54a892
+# ╠═80c1a728-1784-4bb7-b2c3-e77b41929a78
+# ╟─a25cb8e6-f65d-4061-b90c-079814458c94
+# ╟─4cc483e5-c322-44c8-83f1-802b6cb432aa
+# ╟─3ce501b4-76bc-49ab-b3b8-a41f29dbcc2b
+# ╟─c539e622-d76d-489a-abb9-4ba47dfe9b90
+# ╟─95fe38c5-d717-47d0-8db7-5f8d53a6c6f1
+# ╠═2982c418-dad5-44cc-8194-5b607af84b16
+# ╠═c97964d1-b5d2-4ee7-80cc-995b3f344aa1
+# ╟─ba121b40-2bfc-42d4-81ee-5f90e18ec8de
+# ╟─74892ec6-6639-469d-8711-5039a140d833
+# ╟─fc6899d3-ea18-487a-add1-20be86ce9c74
+# ╟─75a60bcf-3f77-49fb-a7ee-db4580aae6f3
+# ╟─786beb46-d175-44b3-a63e-057150e53c66
+# ╟─2d9f3aad-1d41-4918-a128-47dc58b667e3
+# ╟─17a23094-3975-49f4-8c7f-03fbc8afbbf2
+# ╟─eaf6f4eb-b367-492e-a1be-81f9455252c4
+# ╟─51c226b9-ab3d-46b4-a963-3548ad715d85
+# ╟─6c527098-ab53-4862-bda6-0c11b1564a11
+# ╟─3c2b2f03-522c-40a0-ac1d-8054fe8e3fa2
+# ╟─5cec433e-ee71-44b5-b5d6-3feab80fa535
+# ╟─96b02ce7-ce16-4276-a147-ba94d7a2e160
+# ╠═d952db33-1f82-42f5-96af-8038c256715b
+# ╠═2b9276dc-fcca-4469-a62c-028a9eb3c2a9
+# ╟─754fe8c1-7021-48e8-9523-d5b22d0af93f
+# ╟─ccb35ad7-db20-46fa-abff-a6e88ef999e0
+# ╟─d03d9bfc-20ea-49bc-bc7b-df22cc240ffe
+# ╟─dde3ffc7-b333-4305-b8e7-9888e4512c41
+# ╟─d74bace6-08f4-11eb-2a6b-891e52952f57
+# ╟─76268535-e232-4e02-97cd-cf9b3ddec256
+# ╟─11e24e1d-39db-4b7e-96db-50458def72af
+# ╟─dbdf2812-08f4-11eb-25e7-811522b24627
+# ╟─238f0716-0903-11eb-1595-df71600f5de7
+# ╟─8e771c8a-0903-11eb-1e34-39de4f45412b
+# ╟─fb52c62d-15d3-46a2-8e3d-2de20c68ded4
+# ╟─e83fc5b8-0904-11eb-096b-8da3a1acba12
+# ╟─d1fbea7a-0904-11eb-377d-690d7a16aa7b
+# ╟─dba896a4-0904-11eb-3c47-cbbf6c01e830
+# ╟─cea2dcfb-b1eb-4269-81d7-8596969e9bd6
+# ╟─08d166f1-3af0-45a8-bcad-6ee958497453
+# ╟─72061c66-090d-11eb-14c0-df619958e2b6
+# ╟─c07367be-0987-11eb-0680-0bebd894e1be
+# ╟─f8a28ba0-0915-11eb-12d1-336f291e1d84
+# ╠═442035a6-0915-11eb-21de-e11cf950f230
+# ╠═d994e972-090d-11eb-1b77-6d5ddb5daeab
+# ╠═050bffbc-0915-11eb-2925-ad11b3f67030
+# ╠═1d0baf98-0915-11eb-2f1e-8176d14c06ad
+# ╠═28e1ec24-0915-11eb-228c-4daf9abe189b
+# ╠═349eb1b6-0915-11eb-36e3-1b9459c38a95
+# ╠═39c24ef0-0915-11eb-1a0e-c56f7dd01235
+# ╟─5f5d7332-b5f8-4d05-971b-ec0564f1339b
+# ╟─7cf51986-5983-4094-a18f-f95f2f6993da
+# ╟─763bbb15-c52e-4159-99b7-f3d17f47d56a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
