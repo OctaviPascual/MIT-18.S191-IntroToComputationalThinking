@@ -749,6 +749,7 @@ md"""
 
 # ╔═╡ 2270e6ba-8c5e-11eb-3600-615519daa5e0
 function atmosphere(p::Real, y0::Real, N::Integer)
+	ys = [y0]
 	y = y0
 	for i in 1:N
 		if bernoulli(p)
@@ -756,8 +757,9 @@ function atmosphere(p::Real, y0::Real, N::Integer)
 		else
 			y += 1
 		end
+		push!(ys, y)
 	end
-	return y
+	return ys
 end
 
 # ╔═╡ 225bbcbd-0628-4151-954e-9a85d1020fd9
@@ -773,7 +775,7 @@ Let's simulate it for $10^7$ time steps with $x_0 = 10$ and $p=0.55$.
 """
 
 # ╔═╡ deb5fbfb-1e03-42ce-a6d6-c8d3edd89a9a
-atmosphere_experiment = [atmosphere(0.55, 10, 10_000_000) for _ in 1:300]
+atmosphere_experiment = atmosphere(0.55, 10, 10_000_000)
 
 # ╔═╡ 8517f92b-d4d3-46b5-9b9a-e609175b6481
 let
@@ -794,6 +796,11 @@ let
 	bar(xs, ps, alpha=0.5, leg=false, yaxis=:log)
 end
 
+# ╔═╡ 810b952c-89eb-4248-8de3-3c46dd80321e
+md"""
+The distribution has a form of exponential, we can see that by plotting y in log form.
+"""
+
 # ╔═╡ 1dc7389c-8c5e-11eb-123a-7f59dc6504cf
 md"""
 #### Exercise 4.3
@@ -803,10 +810,19 @@ md"""
 """
 
 # ╔═╡ d3bec73d-0106-496d-93ae-e1e26534b8c7
-
+@bind steps Slider(0 : 1000 : 100_000, show_value=true)
 
 # ╔═╡ d972be1f-a8ad-43ed-a90d-bca358d812c2
+let
+	xs, ps = probability_distribution(atmosphere(0.55, 10, steps))
 
+	bar(xs, ps, alpha=0.5, leg=false)
+end
+
+# ╔═╡ 76637b39-d10f-4f83-97bb-9aa3cc76aa5e
+md"""
+For longer and longer times the probability of being at position y=1 increases.
+"""
 
 # ╔═╡ de83ffd6-cd0c-4b78-afe4-c0bcc54471d7
 md"""
@@ -814,7 +830,20 @@ md"""
 """
 
 # ╔═╡ fe45b8de-eb3f-43ca-9d63-5c01d0d27671
+md"""
+$P_h = P_0 e^{\frac{-mgh}{kT}}$
 
+where:\
+$P_h$ pressure at height h \
+$P_0$ sea level pressure \
+$g$	acceleration due to gravity\
+$k$	Boltzmann's constant (ideal gas constant divided by Avogadro's number)\
+$T$	absolute temperature\
+$m$ mass of one air molecule
+
+
+This matches the exponential behaviour of the probability distribution we found for the random walk.
+"""
 
 # ╔═╡ 5aabbec1-a079-4936-9cd1-9c25fe5700e6
 md"## Function library
@@ -1080,15 +1109,15 @@ bigbreak
 # ╔═╡ a5234680-8b02-11eb-2574-15489d0d49ea
 bigbreak
 
-# ╔═╡ 2962c6da-feda-4d65-918b-d3b178a18fa0
-begin
-	fruits = ["🍒", "🍐", "🍋"]
-	length(fruits)
-end
-
 # ╔═╡ 887a5106-c44a-4437-8c6f-04ad6610738a
 begin
 	fruits = ["🍉"]
+	length(fruits)
+end
+
+# ╔═╡ 2962c6da-feda-4d65-918b-d3b178a18fa0
+begin
+	fruits = ["🍒", "🍐", "🍋"]
 	length(fruits)
 end
 
@@ -2211,11 +2240,13 @@ version = "0.9.1+5"
 # ╠═8517f92b-d4d3-46b5-9b9a-e609175b6481
 # ╟─1dc68e2e-8c5e-11eb-3486-454d58ac9c87
 # ╠═bb8f69fd-c704-41ca-9328-6622d390f71f
+# ╟─810b952c-89eb-4248-8de3-3c46dd80321e
 # ╟─1dc7389c-8c5e-11eb-123a-7f59dc6504cf
 # ╠═d3bec73d-0106-496d-93ae-e1e26534b8c7
 # ╠═d972be1f-a8ad-43ed-a90d-bca358d812c2
+# ╟─76637b39-d10f-4f83-97bb-9aa3cc76aa5e
 # ╟─de83ffd6-cd0c-4b78-afe4-c0bcc54471d7
-# ╠═fe45b8de-eb3f-43ca-9d63-5c01d0d27671
+# ╟─fe45b8de-eb3f-43ca-9d63-5c01d0d27671
 # ╟─a5234680-8b02-11eb-2574-15489d0d49ea
 # ╟─5aabbec1-a079-4936-9cd1-9c25fe5700e6
 # ╟─42d6b87d-b4c3-4ccb-aceb-d1b020135f47
