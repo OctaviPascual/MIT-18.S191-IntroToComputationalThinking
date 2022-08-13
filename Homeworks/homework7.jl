@@ -16,7 +16,7 @@ end
 
 # ╔═╡ 15187690-0403-11eb-2dfd-fd924faa3513
 begin
-    using Plots, PlutoUI
+    using Plots, PlutoUI, Statistics
 end
 
 # ╔═╡ 01341648-0403-11eb-2212-db450c299f35
@@ -260,17 +260,6 @@ md"""
 Play around with the test case below to test your function! Try changing the definitions of `agent`, `source` and `infection`. Since we are working with randomness, you might want to run the cell multiple times.
 """
 
-# ╔═╡ 9c39974c-04a5-11eb-184d-317eb542452c
-let
-	agent = Agent(S, 0)
-	source = Agent(I, 0)
-	infection = InfectionRecovery(0.9, 0.5)
-	
-	interact!(agent, source, infection)
-	
-	(agent=agent, source=source)
-end
-
 # ╔═╡ 619c8a10-0403-11eb-2e89-8b0974fb01d0
 md"""
 ## **Exercise 2:** _Agent-based model for an epidemic outbreak --  Monte Carlo simulation_
@@ -291,20 +280,10 @@ You should not use any global variables inside the functions: Each function must
 
 """
 
-# ╔═╡ 2ade2694-0425-11eb-2fb2-390da43d9695
-function step!(agents::Vector{Agent}, infection::InfectionRecovery)
-	
-end
-
 # ╔═╡ 955321de-0403-11eb-04ce-fb1670dfbb9e
 md"""
 👉 Write a function `sweep!`. It runs `step!` $N$ times, where $N$ is the number of agents. Thus each agent acts, on average, once per sweep; a sweep is thus the unit of time in our Monte Carlo simulation.
 """
-
-# ╔═╡ 46133a74-04b1-11eb-0b46-0bc74e564680
-function sweep!(agents::Vector{Agent}, infection::AbstractInfection)
-	
-end
 
 # ╔═╡ 95771ce2-0403-11eb-3056-f1dc3a8b7ec3
 md"""
@@ -321,10 +300,231 @@ You've seen an example of named tuples before: the `student` variable at the top
 _Feel free to store the counts in a different way, as long as the return type is the same._
 """
 
+# ╔═╡ 28db9d98-04ca-11eb-3606-9fb89fa62f36
+@bind run_basic_sir Button("Run simulation again!")
+
+# ╔═╡ bf6fd176-04cc-11eb-008a-2fb6ff70a9cb
+md"""
+#### Exercise 2.2
+Alright! Every time that we run the simulation, we get slightly different results, because it is based on randomness. By running the simulation a number of times, you start to get an idea of the _mean behaviour_ of our model. This is the essence of a Monte Carlo method! You use computer-generated randomness to generate samples.
+
+Instead of pressing the button many times, let's have the computer repeat the simulation. In the next cells, we run your simulation `num_simulations=20` times with $N=100$, $p_\text{infection} = 0.02$, $p_\text{recovery} = 0.002$ and $T = 1000$. 
+
+Every single simulation returns a named tuple with the status counts, so the result of multiple simulations will be an array of those. Have a look inside the result, `simulations`, and make sure that its structure is clear.
+"""
+
+# ╔═╡ 80e6f1e0-04b1-11eb-0d4e-475f1d80c2bb
+md"""
+In the cell below, we plot the evolution of the number of $I$ individuals as a function of time for each of the simulations on the same plot using transparency (`alpha=0.5` inside the plot command).
+"""
+
+# ╔═╡ 95c598d4-0403-11eb-2328-0175ed564915
+md"""
+👉 Write a function `sir_mean_plot` that returns a plot of the means of $S$, $I$ and $R$ as a function of time on a single graph.
+"""
+
+# ╔═╡ 843fd63c-04d0-11eb-0113-c58d346179d6
+function sir_mean_plot(simulations::Vector{<:NamedTuple})
+	# you might need T for this function, here's a trick to get it:
+	T = length(first(simulations).S)
+	N = length(simulations)
+	p = plot()
+
+	S_mean = []
+	I_mean = []
+	R_mean = []
+	for i=1:T
+		push!(S_mean, sum([sim.S[i] for sim in simulations]) / N)
+		push!(I_mean, sum([sim.I[i] for sim in simulations]) / N)
+		push!(R_mean, sum([sim.R[i] for sim in simulations]) / N)
+	end
+	plot!(p, 1:T, S_mean, alpha=.5, label="S_mean")
+	plot!(p, 1:T, I_mean, alpha=.5, label="I_mean")
+	plot!(p, 1:T, R_mean, alpha=.5, label="R_mean")
+	
+	return p
+end
+
+# ╔═╡ dfb99ace-04cf-11eb-0739-7d694c837d59
+md"""
+👉 Allow $p_\text{infection}$ and $p_\text{recovery}$ to be changed interactively and find parameter values for which you observe an epidemic outbreak.
+"""
+
+# ╔═╡ 1c6aa208-04d1-11eb-0b87-cf429e6ff6d0
+@bind p_infection Slider(0 : 0.01 : 1, show_value=true)
+
+# ╔═╡ da76e683-cfc4-46b3-a09c-bcffea5024c1
+@bind p_recovery Slider(0 : 0.01 : 1, show_value=true)
+
+# ╔═╡ 95eb9f88-0403-11eb-155b-7b2d3a07cff0
+md"""
+👉 Write a function `sir_mean_error_plot` that does the same as `sir_mean_plot`, which also computes the **standard deviation** $\sigma$ of $S$, $I$, $R$ at each step. Add this to the plot using **error bars**, using the option `yerr=σ` in the plot command; use transparency.
+
+This should confirm that the distribution of $I$ at each step is pretty wide!
+"""
+
+# ╔═╡ 287ee7aa-0435-11eb-0ca3-951dbbe69404
+function sir_mean_error_plot(simulations::Vector{<:NamedTuple})
+	# you might need T for this function, here's a trick to get it:
+	T = length(first(simulations).S)
+	N = length(simulations)
+	p = plot()
+
+	S_mean = []
+	S_σ = []
+	
+	I_mean = []
+	I_σ = []
+	
+	R_mean = []
+	R_σ = []
+	
+	for i=1:T
+		push!(S_mean, sum([sim.S[i] for sim in simulations]) / N)
+		push!(S_σ, std([sim.S[i] for sim in simulations]))
+	
+		push!(I_mean, sum([sim.I[i] for sim in simulations]) / N)
+		push!(I_σ, std([sim.I[i] for sim in simulations]))
+		
+		push!(R_mean, sum([sim.R[i] for sim in simulations]) / N)
+		push!(R_σ, std([sim.R[i] for sim in simulations]))
+	end
+	plot!(p, 1:T, S_mean, alpha=.1, label="S_mean", yerr=S_σ)
+	plot!(p, 1:T, I_mean, alpha=.1, label="I_mean", yerr=I_σ)
+	plot!(p, 1:T, R_mean, alpha=.1, label="R_mean", yerr=R_σ)
+	
+	return p
+end
+
+# ╔═╡ 9611ca24-0403-11eb-3582-b7e3bb243e62
+md"""
+#### Exercise 2.3
+
+👉 Plot the probability distribution of `num_infected`. Does it have a recognisable shape? (Feel free to increase the number of agents in order to get better statistics.)
+
+"""
+
+# ╔═╡ 63be96be-d2ef-4334-9d7b-9f6871e85624
+function counts(data::Vector)
+	counts = Dict{Int,Int}()
+
+	map(x -> counts[x] = get!(counts, x, 0) + 1, data)
+	
+	return counts
+end
+
+# ╔═╡ 8b72c26c-537f-4182-84b0-c66cdce42bc4
+function counts2(data::Vector)
+	data_counts = counts(data)
+	ks, vs = collect(keys(data_counts)), collect(values(data_counts))
+	perm = sortperm(ks)
+	return ks[perm], vs[perm]
+end
+
+# ╔═╡ 180e292b-f11f-459b-9322-af015dbf49cd
+function probability_distribution(data::Vector)
+	ks, vs = counts2(data)
+	return ks, vs / sum(vs)
+end
+
+# ╔═╡ 9635c944-0403-11eb-3982-4df509f6a556
+md"""
+#### Exercise 2.4
+👉 What are three *simple* ways in which you could characterise the magnitude (size) of the epidemic outbreak? Find approximate values of these quantities for one of the runs of your simulation.
+
+"""
+
+# ╔═╡ 4ad11052-042c-11eb-3643-8b2b3e1269bc
+md"""
+We can characterise the magnitude of the epidemic by measuring:
+- percentage of infected people at the end of the simulation
+- percentage of recovered people at the end of the simulation
+- mean of number of infected at the end of the simulation
+"""
+
+# ╔═╡ 61c00724-0403-11eb-228d-17c11670e5d1
+md"""
+## **Exercise 3:** _Reinfection_
+
+In this exercise we will *re-use* our simulation infrastructure to study the dynamics of a different type of infection: there is no immunity, and hence no "recovery" rather, susceptible individuals may now be **re-infected** 
+
+#### Exercise 3.1
+👉 Make a new infection type `Reinfection`. This has the *same* two fields as `InfectionRecovery` (`p_infection` and `p_recovery`). However, "recovery" now means "becomes susceptible again", instead of "moves to the `R` class. 
+
+This new type `Reinfection` should also be a **subtype** of `AbstractInfection`. This allows us to reuse our previous functions, which are defined for the abstract supertype.
+"""
+
+# ╔═╡ 8dd97820-04a5-11eb-36c0-8f92d4b859a8
+struct Reinfection <: AbstractInfection
+	p_infection
+	p_recovery
+end
+
+# ╔═╡ 99ef7b2a-0403-11eb-08ef-e1023cd151ae
+md"""
+👉 Make a *new method* for the `interact!` function that accepts the new infection type as argument, reusing as much functionality as possible from the previous version. 
+
+"""
+
+# ╔═╡ bbb103d5-c8f9-485b-9337-40892bb60506
+function interact!(agent::Agent, source::Agent, infection::Reinfection)
+	if is_infected(agent)
+		if bernoulli(infection.p_recovery)
+			set_status!(agent, S)
+		end
+		return
+	end
+
+	if is_susceptible(agent) && is_infected(source)
+		if bernoulli(infection.p_infection)
+			set_status!(agent, I)
+			set_num_infected!(source, source.num_infected + 1)
+		end
+		return
+	end
+end
+
+# ╔═╡ 9c39974c-04a5-11eb-184d-317eb542452c
+let
+	agent = Agent(S, 0)
+	source = Agent(I, 0)
+	infection = InfectionRecovery(0.9, 0.5)
+	
+	interact!(agent, source, infection)
+	
+	(agent=agent, source=source)
+end
+
+# ╔═╡ 2ade2694-0425-11eb-2fb2-390da43d9695
+function step!(agents::Vector{Agent}, infection::AbstractInfection)
+	agent, source = rand(agents, 2)
+	interact!(agent, source, infection)
+	return agents
+end
+
+# ╔═╡ 46133a74-04b1-11eb-0b46-0bc74e564680
+function sweep!(agents::Vector{Agent}, infection::AbstractInfection)
+	for _=1:length(agents)
+		step!(agents, infection)
+	end
+end
+
 # ╔═╡ 887d27fc-04bc-11eb-0ab9-eb95ef9607f8
 function simulation(N::Integer, T::Integer, infection::AbstractInfection)
+	agents = generate_agents(N)
+	S_counts = []
+	I_counts = []
+	R_counts = []
 
-	return (S=missing, I=missing, R=missing)
+	for _=1:T
+		sweep!(agents, infection)
+
+		push!(S_counts, count(x -> x.status == S, agents))
+		push!(I_counts, count(x -> x.status == I, agents))
+		push!(R_counts, count(x -> x.status == R, agents))
+	end
+
+	return (S=S_counts, I=I_counts, R=R_counts)
 end
 
 # ╔═╡ b92f1cec-04ae-11eb-0072-3535d1118494
@@ -333,13 +533,8 @@ simulation(3, 20, InfectionRecovery(0.9, 0.2))
 # ╔═╡ 2c62b4ae-04b3-11eb-0080-a1035a7e31a2
 simulation(100, 1000, InfectionRecovery(0.005, 0.2))
 
-# ╔═╡ 28db9d98-04ca-11eb-3606-9fb89fa62f36
-@bind run_basic_sir Button("Run simulation again!")
-
 # ╔═╡ c5156c72-04af-11eb-1106-b13969b036ca
-let
-	run_basic_sir
-	
+let	
 	N = 100
 	T = 1000
 	sim = simulation(N, T, InfectionRecovery(0.02, 0.002))
@@ -348,16 +543,6 @@ let
 	plot!(result, 1:T, sim.I, ylim=(0, N), label="Infectious")
 	plot!(result, 1:T, sim.R, ylim=(0, N), label="Recovered")
 end
-
-# ╔═╡ bf6fd176-04cc-11eb-008a-2fb6ff70a9cb
-md"""
-#### Exercise 2.2
-Alright! Every time that we run the simulation, we get slightly different results, because it is based on randomness. By running the simulation a number of times, you start to get an idea of the _mean behaviour_ of our model. This is the essence of a Monte Carlo method! You use computer-generated randomness to generate samples.
-
-Instead of pressing the button many times, let's have the computer repeat the simulation. In the next cells, we run your simulation `num_simulations=20` times with $N=100$, $p_\text{infection} = 0.02$, $p_\text{infection} = 0.002$ and $T = 1000$. 
-
-Every single simulation returns a named tuple with the status counts, so the result of multiple simulations will be an array of those. Have a look inside the result, `simulations`, and make sure that its structure is clear.
-"""
 
 # ╔═╡ 38b1aa5a-04cf-11eb-11a2-930741fc9076
 function repeat_simulations(N, T, infection, num_simulations)
@@ -372,11 +557,6 @@ end
 # ╔═╡ 80c2cd88-04b1-11eb-326e-0120a39405ea
 simulations = repeat_simulations(100, 1000, InfectionRecovery(0.02, 0.002), 20)
 
-# ╔═╡ 80e6f1e0-04b1-11eb-0d4e-475f1d80c2bb
-md"""
-In the cell below, we plot the evolution of the number of $I$ individuals as a function of time for each of the simulations on the same plot using transparency (`alpha=0.5` inside the plot command).
-"""
-
 # ╔═╡ 9cd2bb00-04b1-11eb-1d83-a703907141a7
 let
 	p = plot()
@@ -384,21 +564,14 @@ let
 	for sim in simulations
 		plot!(p, 1:1000, sim.I, alpha=.5, label=nothing)
 	end
+
+	mean = []
+	for i=1:1000
+		push!(mean, sum([sim.I[i] for sim in simulations]) / length(simulations))
+	end
+	plot!(p, 1:1000, mean, alpha=.5, label="mean", lw=3)
 	
 	p
-end
-
-# ╔═╡ 95c598d4-0403-11eb-2328-0175ed564915
-md"""
-👉 Write a function `sir_mean_plot` that returns a plot of the means of $S$, $I$ and $R$ as a function of time on a single graph.
-"""
-
-# ╔═╡ 843fd63c-04d0-11eb-0113-c58d346179d6
-function sir_mean_plot(simulations::Vector{<:NamedTuple})
-	# you might need T for this function, here's a trick to get it:
-	T = length(first(simulations).S)
-	
-	return missing
 end
 
 # ╔═╡ 7f635722-04d0-11eb-3209-4b603c9e843c
@@ -418,73 +591,47 @@ let
 	
 end
 
-# ╔═╡ dfb99ace-04cf-11eb-0739-7d694c837d59
-md"""
-👉 Allow $p_\text{infection}$ and $p_\text{recovery}$ to be changed interactively and find parameter values for which you observe an epidemic outbreak.
-"""
+# ╔═╡ 147e8f8e-2091-4881-95b8-f3075c66cead
+sir_mean_error_plot(simulations)
 
-# ╔═╡ 1c6aa208-04d1-11eb-0b87-cf429e6ff6d0
-
-
-# ╔═╡ 95eb9f88-0403-11eb-155b-7b2d3a07cff0
-md"""
-👉 Write a function `sir_mean_error_plot` that does the same as `sir_mean_plot`, which also computes the **standard deviation** $\sigma$ of $S$, $I$, $R$ at each step. Add this to the plot using **error bars**, using the option `yerr=σ` in the plot command; use transparency.
-
-This should confirm that the distribution of $I$ at each step is pretty wide!
-"""
-
-# ╔═╡ 287ee7aa-0435-11eb-0ca3-951dbbe69404
-function sir_mean_error_plot(simulations::Vector{<:NamedTuple})
-	# you might need T for this function, here's a trick to get it:
-	T = length(first(simulations).S)
-	
-	return missing
+# ╔═╡ 5984ff0e-3332-41cb-adbc-cc236c479025
+begin
+	sims = repeat_simulations(100, 1000, InfectionRecovery(p_infection, p_recovery), 20)
+	sir_mean_plot(sims)
 end
 
-# ╔═╡ 9611ca24-0403-11eb-3582-b7e3bb243e62
-md"""
-#### Exercise 2.3
 
-👉 Plot the probability distribution of `num_infected`. Does it have a recognisable shape? (Feel free to increase the number of agents in order to get better statistics.)
+# ╔═╡ a6a00964-f896-4a74-b841-8fde7f8c509f
+function run_agents_simulation()
+	N = 10_000
+	T = 1000
+	agents = generate_agents(N)
 
-"""
+	for _=1:T
+		sweep!(agents, InfectionRecovery(0.02, 0.002))
+	end
+
+	return agents
+end
+
+# ╔═╡ b7b9e1ee-3e44-4ecb-9a0d-80c1f6014dbd
+agents_simulation = run_agents_simulation()
 
 # ╔═╡ 26e2978e-0435-11eb-0d61-25f552d2771e
+let
+	xs, ps = probability_distribution([a.num_infected for a in agents_simulation])
+	
+	bar(xs, ps, alpha=0.5, leg=false)
+end
 
+# ╔═╡ 150b0ce3-c782-4d40-a7ba-71b929c07150
+count(x -> x.status == I, agents_simulation) / length(agents_simulation) * 100
 
-# ╔═╡ 9635c944-0403-11eb-3982-4df509f6a556
-md"""
-#### Exercse 2.4
-👉 What are three *simple* ways in which you could characterise the magnitude (size) of the epidemic outbreak? Find approximate values of these quantities for one of the runs of your simulation.
+# ╔═╡ 387b5b48-062b-4bb3-9d74-059386129272
+count(x -> x.status == R, agents_simulation) / length(agents_simulation) * 100
 
-"""
-
-# ╔═╡ 4ad11052-042c-11eb-3643-8b2b3e1269bc
-
-
-# ╔═╡ 61c00724-0403-11eb-228d-17c11670e5d1
-md"""
-## **Exercise 3:** _Reinfection_
-
-In this exercise we will *re-use* our simulation infrastructure to study the dynamics of a different type of infection: there is no immunity, and hence no "recovery" rather, susceptible individuals may now be **re-infected** 
-
-#### Exercise 3.1
-👉 Make a new infection type `Reinfection`. This has the *same* two fields as `InfectionRecovery` (`p_infection` and `p_recovery`). However, "recovery" now means "becomes susceptible again", instead of "moves to the `R` class. 
-
-This new type `Reinfection` should also be a **subtype** of `AbstractInfection`. This allows us to reuse our previous functions, which are defined for the abstract supertype.
-"""
-
-# ╔═╡ 8dd97820-04a5-11eb-36c0-8f92d4b859a8
-
-
-# ╔═╡ 99ef7b2a-0403-11eb-08ef-e1023cd151ae
-md"""
-👉 Make a *new method* for the `interact!` function that accepts the new infection type as argument, reusing as much functionality as possible from the previous version. 
-
-"""
-
-# ╔═╡ bbb103d5-c8f9-485b-9337-40892bb60506
-
+# ╔═╡ 4f2a0694-a9ee-4f05-a734-18feb414471d
+sum([x.num_infected for x in agents_simulation]) / length(agents_simulation)
 
 # ╔═╡ 9a13b17c-0403-11eb-024f-9b37e95e211b
 md"""
@@ -495,8 +642,25 @@ Note that you should be able to re-use the `sweep!` and `simulation` functions ,
 
 """
 
-# ╔═╡ 1ac4b33a-0435-11eb-36f8-8f3f81ae7844
+# ╔═╡ 25db027e-160c-4b81-b011-4873eaac861a
+reinfection_simulations = repeat_simulations(100, 1000, Reinfection(0.02, 0.002), 20)
 
+# ╔═╡ 1ac4b33a-0435-11eb-36f8-8f3f81ae7844
+let
+	p = plot()
+	
+	for sim in reinfection_simulations
+		plot!(p, 1:1000, sim.I, alpha=.5, label=nothing)
+	end
+
+	mean = []
+	for i=1:1000
+		push!(mean, sum([sim.I[i] for sim in reinfection_simulations]) / length(reinfection_simulations))
+	end
+	plot!(p, 1:1000, mean, alpha=.5, label="mean", lw=3)
+	
+	p
+end
 
 # ╔═╡ 9a377b32-0403-11eb-2799-e7e59caa6a45
 md"""
@@ -506,7 +670,14 @@ md"""
 """
 
 # ╔═╡ 21c50840-0435-11eb-1307-7138ecde0691
+sir_mean_plot(reinfection_simulations)
 
+# ╔═╡ f18d12c7-748b-4572-a108-1f91719e9183
+md"""
+We see that the number of recoveries stays at 0 because now agents can't recover.
+
+The number of infections stabilizes around a value, as well as the number of susceptible. Hence, the system seems to converge to an equilibrium, whereas in the previous model we saw that the number of infections decreased by the end of the simulation.
+"""
 
 # ╔═╡ 531d13c2-0414-11eb-0acd-4905a684869d
 if student.name == "Jazzy Doe"
@@ -724,6 +895,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Plots = "~1.29.0"
@@ -1738,20 +1910,33 @@ version = "0.9.1+5"
 # ╠═a4c9ccdc-12ca-11eb-072f-e34595520548
 # ╟─dfb99ace-04cf-11eb-0739-7d694c837d59
 # ╠═1c6aa208-04d1-11eb-0b87-cf429e6ff6d0
+# ╠═da76e683-cfc4-46b3-a09c-bcffea5024c1
+# ╠═5984ff0e-3332-41cb-adbc-cc236c479025
 # ╟─95eb9f88-0403-11eb-155b-7b2d3a07cff0
 # ╠═287ee7aa-0435-11eb-0ca3-951dbbe69404
+# ╠═147e8f8e-2091-4881-95b8-f3075c66cead
 # ╟─9611ca24-0403-11eb-3582-b7e3bb243e62
+# ╠═63be96be-d2ef-4334-9d7b-9f6871e85624
+# ╠═8b72c26c-537f-4182-84b0-c66cdce42bc4
+# ╠═180e292b-f11f-459b-9322-af015dbf49cd
+# ╠═a6a00964-f896-4a74-b841-8fde7f8c509f
+# ╠═b7b9e1ee-3e44-4ecb-9a0d-80c1f6014dbd
 # ╠═26e2978e-0435-11eb-0d61-25f552d2771e
 # ╟─9635c944-0403-11eb-3982-4df509f6a556
-# ╠═4ad11052-042c-11eb-3643-8b2b3e1269bc
+# ╟─4ad11052-042c-11eb-3643-8b2b3e1269bc
+# ╠═150b0ce3-c782-4d40-a7ba-71b929c07150
+# ╠═387b5b48-062b-4bb3-9d74-059386129272
+# ╠═4f2a0694-a9ee-4f05-a734-18feb414471d
 # ╟─61c00724-0403-11eb-228d-17c11670e5d1
 # ╠═8dd97820-04a5-11eb-36c0-8f92d4b859a8
 # ╟─99ef7b2a-0403-11eb-08ef-e1023cd151ae
 # ╠═bbb103d5-c8f9-485b-9337-40892bb60506
 # ╟─9a13b17c-0403-11eb-024f-9b37e95e211b
+# ╠═25db027e-160c-4b81-b011-4873eaac861a
 # ╠═1ac4b33a-0435-11eb-36f8-8f3f81ae7844
 # ╟─9a377b32-0403-11eb-2799-e7e59caa6a45
 # ╠═21c50840-0435-11eb-1307-7138ecde0691
+# ╟─f18d12c7-748b-4572-a108-1f91719e9183
 # ╟─5689841e-0414-11eb-0492-63c77ddbd136
 # ╟─531d13c2-0414-11eb-0acd-4905a684869d
 # ╟─4f19e872-0414-11eb-0dfd-e53d2aecc4dc
