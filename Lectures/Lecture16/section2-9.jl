@@ -14,10 +14,10 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 85b45a43-d7bf-4597-a1a6-329b41dce20d
-using PlutoUI, Plots, LinearAlgebra, SparseArrays
+# ╔═╡ 400ebe26-0dea-4cf2-8744-6c73a45cd33e
+using PlutoUI, Plots, Statistics, Optim, JuMP, Ipopt, ForwardDiff
 
-# ╔═╡ e46441c4-97bd-11eb-330c-97bd5ac41f9e
+# ╔═╡ 945c2bf1-d7dc-42c9-93d7-fd754f8fb1d7
 html"""
 <div style="
 position: absolute;
@@ -46,9 +46,9 @@ font-feature-settings: 'lnum', 'pnum';
 "> <p style="
 font-size: 1.5rem;
 opacity: .8;
-"><em>Section 2.6</em></p>
+"><em>Section 2.9</em></p>
 <p style="text-align: center; font-size: 2rem;">
-<em> Random Walks II </em>
+<em> Optimization </em>
 </p>
 
 <p style="
@@ -58,7 +58,7 @@ opacity: .8;
 "><em>Lecture Video</em></p>
 <div style="display: flex; justify-content: center;">
 <div  notthestyle="position: relative; right: 0; top: 0; z-index: 300;">
-<iframe src="https://www.youtube.com/embed/pIAFHyLmwbM" width=400 height=250  frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+<iframe src="https://www.youtube.com/embed/44RA9fclTdA" width=400 height=250  frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 </div>
 </div>
 
@@ -68,446 +68,325 @@ overflow-x: hidden;
 }
 </style>"""
 
-# ╔═╡ 85c26eb4-c258-4a8b-9415-7b5f7ddff02a
-TableOfContents(aside=true)
+# ╔═╡ b8d66df5-f593-40b4-8c46-3b638f9cc3e1
+TableOfContents()
 
-# ╔═╡ 2d48bfc6-9617-11eb-3a85-279bebd21332
+# ╔═╡ 77253dd5-a2c8-4cf5-890a-5c8420c395b7
 md"""
 # Julia concepts
 
-- Customised display of objects
-- Structured matrices in Julia
-- `cumsum`
-- Vectors of vectors
-- Concatenation of vectors: `hcat`
-
-
-- `heatmap` (Plots.jl)
-- `surface` (Plots.jl)
-
+- Named tuples
 """
 
-# ╔═╡ 30162386-039f-4cd7-9121-a3382be3c294
+# ╔═╡ dccbd53d-33ed-4d37-9d2c-da76e090d5dd
 md"""
-# Pascal's triangle
-
+# Line Fitting Many Ways
 """
 
-# ╔═╡ 4e7b163e-dfd0-457e-b1f3-8807a4d8060a
+# ╔═╡ 235919f2-a4b0-4bb5-870c-82809a170195
 md"""
-Let's start by thinking about Pascal's triangle. (Note that [Pascal was not the first person to study these numbers](https://en.wikipedia.org/wiki/Pascal%27s_triangle).)
+Last lecture we did some line fitting ("regression"). Let's see how we can actually solve that problem.
 """
 
-# ╔═╡ e8ceab7b-45db-4393-bb8e-e000ecf78d2c
-pascal(N) = [binomial(n, k) for n=0:N, k=0:N]
-
-# ╔═╡ 2d4dffb9-39e4-48de-9688-980b96814c9f
-pascal(10)
-
-# ╔═╡ 8ff66523-bc2e-4c53-975b-8ba4f99eb1c6
+# ╔═╡ 2ed86f33-bced-413c-9a8d-c6e49bfe5afb
 md"""
-The non-zero entries are the **binomial coefficients**: the $k$th entry on the $n$th row is the coefficient of $x^k$ in the expansion $(1 + x)^n$, starting from $n=0$ in the first row and $k=0$ in the first column.
+# Exploratory Data Analysis
 """
 
-# ╔═╡ 2868dd57-7164-4162-8c5d-30628dedeb7a
+# ╔═╡ a78aff8d-5ac0-4915-92de-ffefdb08f88e
 md"""
-Note that there are 0s above the main diagonal -- in other words the matrix is **lower triangular**.
-
-Julia has special types to represent some classes of structured matrices in the standard library `LinearAlgebra` package:
+Let's start off by making some noisy data.
 """
 
-# ╔═╡ f6009473-d3c1-444f-88ae-814f770e811b
-L = LowerTriangular(pascal(10))
-
-# ╔═╡ 9a368602-acd3-43fb-9dff-e407a4bab930
+# ╔═╡ 0e43a6d3-7198-422b-b50c-b9caeaa53074
 md"""
-We see that the display is special: the known "**structural**" zeros are shown as dots, instead of numbers.
+n = $(@bind n Slider(3:10:200, show_value=true))
 """
 
-# ╔═╡ 67517333-175f-48c4-a915-76658cbf1304
-md"""
-As we have already seen, Julia also has a sparse matrix type that we could use for this, in the `SparseArrays` standard library:
-"""
+# ╔═╡ f8c98995-2152-4d45-996a-a0532a233719
+x = sort((rand( -10:100, n)))
 
-# ╔═╡ d6832372-d336-4a54-bbcf-d0bb70e4de64
-sparse(pascal(10))  
+# ╔═╡ 8a5f1fdc-3cef-4c02-a73f-e5975b57b15a
+y = 5/9 .* x  .- 17.7777777  .+  5 .* randn.() #  same as y =  5/9 .* (x .- 32)
 
-# ╔═╡ 35f14826-f1e4-4977-a31a-0f6148fe25ad
-md"""
-For fun, let's look at where the entries of Pascal's triangle are odd. We'll make a slider:
-"""
-
-# ╔═╡ 7468fc5d-7f35-45e2-b5fc-7e63b562bc8f
-@bind n_pascal Slider(1:63, show_value=true, default=1)
-
-# ╔═╡ 1ca8aa3b-b05d-40f6-a925-2f0248b79ca2
-sparse(isodd.(pascal(n_pascal)))
-
-# ╔═╡ 38d88b7c-3b4f-430b-8d3c-f672ab0c7a49
-md"""
-Note that the visual representation of a sparse matrix changes at a particular value of $n$. For larger values of $n$ the **sparsity pattern** is displayed using dots for non-zero values.
-"""
-
-# ╔═╡ f4c9b02b-738b-4de1-9e9d-05b1616bee0b
-md"""
-The pattern is quite striking! When something gets very very large, you really want sometimes to loose information to make it understandable.
-"""
-
-# ╔═╡ d1c47afa-ab7f-4543-a161-e3ceb6f11eb4
-md"""
-You may be interested to know that there is an alternative way to look at Pascal's triangle:
-"""
-
-# ╔═╡ bf78e00f-05d9-4a05-8512-4924ef9e25f7
-[binomial(i + j, i) for i = 0:10, j = 0:10]
-
-# ╔═╡ b948830f-ead1-4f36-a237-c998f2f7deb8
-md"""
-and that in fact this can be produced from the previous version using matrix multiplication!:
-"""
-
-# ╔═╡ 15223c51-8d31-4a50-a8ff-1cb7d35de454
-pascal(10) * pascal(10)'
-
-# ╔═╡ 0bd45c4a-3286-427a-a927-15869be2ebfe
-md"""
-## Convolutions build Pascal's triangle!
-"""
-
-# ╔═╡ 999fb608-fb1a-46cb-82ca-f3f31fe617e1
-pascal(6)
-
-# ╔═╡ 6509e69a-6e50-4816-a98f-67ba437383fb
-md"""
-Where do those binomial coefficients come from? That's not how we learnt to build Pascal's triangle at school!
-
-We learned to build each number up by *summing two adjacent numbers from the previous row*. In the lower-triangular representation we we sum the number immediately above with the one to the left of it.
-"""
-
-# ╔═╡ e58976a9-1784-441e-bb76-3011538b8ad0
-md"""
-We can think of this as... a **convolution** with the vector $[1, 1]$ ! 
-Recall that convolutions like this are used as **image filters**, where we want to apply the same *local* operation everywhere along a vector (i.e. one in which we modify a vector in a neighbourhood).
-"""
-
-# ╔═╡ 1efc2b68-9313-424f-9850-eb4496cc8486
-md"""
-# Random walks: Independent and identically-distributed random variables
-"""
-
-# ╔═╡ 6e93ffda-217b-4d46-86b5-534ddc1bae90
-md"""
-The discussion of Pascal's triangle and convolutions will surprisingly turn up below. For now let's go back to thinking about **random walks**.
-
-Recall that in a random walk, at each tick of a clock we take a step in space, say left or right.
-
-Each spatial step is random, so we can think of each step as being a **random variable** with a certain probability distribution, for example the random variable that takes the value $+1$ with probability $\frac{1}{2}$ and $-1$ also with probability $\frac{1}{2}$.
-
-Often we will think about random walks in which each step is "the same". What do we mean by "the same"? We don't mean that the *outcome* is the same, but rather that each step has the same *probability distribution*, i.e. the same probability of taking each possible value. In other words, each step is given by *copies of the same random variable*. 
-
-Steps are also *independent* of each other (the choice of step direction right now *does not affect* the choice at the next step). Hence the steps form a collection of **independent and identically-distributed random variables**, or IID random variables.
-"""
-
-# ╔═╡ 396d2490-3cb9-4f68-8fdf-9209d2010e02
-md"""
-## Random walks as a cumulative sum
-"""
-
-# ╔═╡ dc1c22e8-1c7b-43b7-8421-c2ca708931a5
-md"""
-Let's call the random variable that describes the $i$th *step* $X_i$. Then the overall position $S_n$ of the random walk at time $n$ is given by
-
-$$S_n = X_1 + \cdots + X_n = \sum_{i=1}^n X_i.$$
-
-(Here we have taken the initial position $S_0$ equal to 0. If the initial position is not zero, then this instead gives the **displacement** $S_n - S_0$ at time $n$.)
-
-
-Recall that by the sum of two random variables we mean a new random variable whose outcomes are sums of the outcomes, with probabilities given by taking the possible pairs of outcomes giving each new outcome.
-"""
-
-# ╔═╡ e7a52b56-322c-4478-a670-dec1013c9bd8
-md"""
-## Cumulative sum
-"""
-
-# ╔═╡ 5f136388-5573-4814-a088-a66278acdbbe
-md"""
-We previously looked at sums like this. The difference now is that we are interested in the entire **trajectory**, i.e. the sequence $S_1$, $S_2$, $\ldots$, $S_n$, $\ldots$. The trajectory is given by **partial sums**:
-"""
-
-# ╔═╡ e440dc3b-bafd-4e0c-9fe8-13fce8eea22d
-md"""
-$$\begin{align}
-S_1 & = X_1 \\
-S_2 &= X_1 + X_2 \\
-S_3 &= X_1 + X_2 + X_3
-\end{align}$$
-
-etc.
-"""
-
-# ╔═╡ 89d3e90d-3685-473d-aea4-0b7c5b80d7f7
-md"""
-Note that $S_{n+1}$ is *not* independent of $S_n$ (or the other $S_m$). E.g. if $S_{100}$ happens to be large, then $S_{101}$ will be about as large.
-
-Thinking about types, as we did a couple of lectures ago, we would need to define a *new* type to represent a random walk, since we cannot generate consecutive values as independent samples.
-"""
-
-# ╔═╡ 203eea14-1c68-4a9f-ab18-9a2e5f408a79
-md"""
-How could we calculate a trajectory of a walk? Suppose we generate steps $X_i$, e.g.
-"""
-
-# ╔═╡ b6d4b045-a39f-4236-ace2-9f631e853d1b
-steps = rand( (-1, +1), 10 )
-
-# ╔═╡ e61b56be-d334-4c8f-aa8e-887bb27c058c
-md"""
-The whole trajectory is given by the **cumulative sum** also called "prefix sum" or "scan". Julia has the function `cumsum` to calculate this:
-"""
-
-# ╔═╡ 782f0b9a-3793-4abb-826b-9e14d6eae690
-cumsum([1, 2, 3, 4])
-
-# ╔═╡ 1764b56a-f297-4a4e-a931-31aa987ec785
-md"""
-So the trajectory is given by 
-"""
-
-# ╔═╡ 8082092b-b6bf-4619-8776-39fdd6c9b7c1
-[0; cumsum(steps)]
-
-# ╔═╡ 34c0b850-5e95-4eb9-8435-3aae8d124772
-plot([0; cumsum(steps)], m=:o, leg=false, size=(500, 300))
-
-# ╔═╡ 4115f7cb-d45f-4cc2-86bf-316c074393f8
-md"""
-Note that in Julia this is just a convenience function; it will be no more performant than writing the `for` loop yourself (unlike in some other languages, where `for` loops are slow).
-"""
-
-# ╔═╡ 6bc2f20d-3d09-425b-a471-44090dc3161e
-md"""
-# Evolving probability distributions in time
-"""
-
-# ╔═╡ 98994cb9-45dc-48aa-b62d-2407f7184bee
-md"""
-So far we have looked at single trajectories of random walks. We can think of this as the equivalent of sampling using `rand`. 
-
-Suppose that we run many trajectories of a random walk. At a given time $t$ we can ask where all of the walks are by taking a histogram of the $S_t^{(k)}$, where the superscript $^{(k)}$ denotes the $k$th trajectory out of the collection.
-
-Doing so gives us the *probability distribution* of the random variable $S_t$.
-Let's call $p_i^t := \mathbb{P}(S_t = i)$ the probability of being at site $i$ at time $t$. Then the probability distribution at time $t$ is given by the collection of all the $p_i^t$; we can group these into a vector $\mathbf{p}^t$.
-
-Now we can ask what happens at the *next* time step $t+1$. Taking histograms again gives the probabilities $p_j^{t+1}$ and the vector $\mathbf{p}^t$ of all of them.
-
-But $\mathbf{p}^{t+1}$ and $\mathbf{p}^{t}$ are related in some way, since we go from $S_t$ to $S_{t+1}$ by just taking a single step. 
-
-Let's think about the case of a simple random walk in one dimension. To arrive at site $i$ at time $t+1$, we must have been in one of the *neighbouring* sites at time $t$ and jumped with probability $\frac{1}{2}$ in the direction of site $i$. Hence we have
-
-$$p_i^{t+1} = \textstyle \frac{1}{2} (p_{i-1}^{t} + p_{i+1}^{t}).$$
-
-This is sometimes called the **master equation** (even though that is rather a useless, non-descriptive name); it describes how the *probability distribution of the random walk evolves in time*.
-"""
-
-# ╔═╡ f11f8d7d-cd3f-4585-aab4-083b892c6d4c
-md"""
-## Implementing time evolution of probabilities
-
-Let's write a function to **evolve** a probability vector to the next time step for a simple random walk:
-"""
-
-# ╔═╡ fb804fe2-58be-46c9-9200-ceb8863d052c
-function evolve(p)
-	p′ = similar(p)   # make a vector of the same length and type
-	                  # to store the probability vector at the next time step
-	
-	for i in 2:length(p)-1   # iterate over the *bulk* of the system
-		
-		p′[i] = 0.5 * (p[i-1] + p[i+1])
-
-	end
-	
-	# boundary conditions:
-	p′[1] = 0
-	p′[end] = 0
-	
-	return p′
+# ╔═╡ 647093eb-a7e3-4175-8091-29c33407e5c9
+begin	
+	plot(x,y, m=:c, mc=:red, legend=false, ls=:dash)
+	xlabel!("°F")
+	ylabel!("°C")
+	# plot!( x, (x.-30)./2) Dave's cool approximation
 end
 
-# ╔═╡ 40e457b4-616c-4fab-9c8e-2e5063129597
+# ╔═╡ cdc25782-65a8-43c5-8090-c1241b798b1a
 md"""
-Wait... Do you recognise this?
-
-This is just a **convolution** again! The kernel is now $[\frac{1}{2}, 0, \frac{1}{2}]$. Apart from the extra $0$ and the $\frac{1}{2}$, this is the *same* as in Pascal's triangle... so probabilities in simple random walk behave like Pascal's triangle!
+# Least Squares fitting to a straight line
 """
 
-# ╔═╡ 979c1fbd-c9f6-4e8b-a648-6a0210fc9e7f
+# ╔═╡ 9ec4dd43-c95a-4f11-b844-fd6ccc93bb68
 md"""
-Note that just as with images we have a problem at the edges of the system: We need to specify **boundary conditions** on the first and last cells. For now we have put 0s at the boundary, corresponding to probability *escaping* at the boundary: any probability that arrives at the boundary at a given time step does not stay in the system. We can think of the probability as analogous to a chemical moving through a system that leaves our system (and e.g. moves into the outside world) when it reaches an edge.
+Suppose we are given data $x_i$ and measurements $y_i$. **Least-squares fitting** a straight line means finding the best ``m`` (slope) and ``b`` (intercept) that minimize
+the "error" (distance from the data) in a least-squares sense:
+
+$$\min_{m,b} \sum  ( (b + m x_i) - y_i)^2$$ 
 """
 
-# ╔═╡ 583e3a92-01e7-4b88-9be0-f1e3b3c95005
+# ╔═╡ 9276b315-27b2-4b01-8fc8-4ebbba58d080
 md"""
-We also need to specify an *initial* condition $\mathbf{p}_0$. This tells us where our walker is at time $0$. Suppose that all walkers start at site $i=0$. We will place this in the middle of our vector. Then the *probability* of being at $0$ is 1 (certainty), while the probability at any other site is 0 (impossible):
+# Direct Formulas
 """
 
-# ╔═╡ 0b26efab-4e93-4d53-9c4d-faea68d12174
-function initial_condition(n)
-	
-	p₀ = zeros(n)
-	p₀[n ÷ 2 + 1] = 1
-	
-	return p₀
-end
-
-# ╔═╡ b9ce5af1-84f7-4a2d-92c9-de2c5498a88d
+# ╔═╡ d22fd4bd-acfe-4e27-a484-3c2d6138f44e
 md"""
-Now let's evolve the probability vector in time by applying the `evolve` function repeatedly, starting from the initial probability distribution:
+## The Statistician's formula
 """
 
-# ╔═╡ b48e55b7-4b56-41aa-9796-674d04adf5df
-function time_evolution(p0, N)
-	ps = [p0]
-	p = p0
-	
-	for i in 1:N
-		p = evolve(p)
-		push!(ps, copy(p))
-	end
-	
-	return ps
-end
-
-# ╔═╡ 53a36c1a-0b8c-4099-8854-08d73c9f118e
-md"""
-Let's visualise this:
-"""
-
-# ╔═╡ 6b298184-32c6-412d-a900-b113d6bd3d53
+# ╔═╡ da0d208b-7d30-470a-b180-4cbfa98298e7
 begin
-	grid_size = 101
-	
-	p0 = initial_condition(grid_size)
+	m = cov(x,y)/var(x) # same as (x.-mean(x))⋅(y.-mean(y))/sum(abs2,x.-mean(x))
+	b = mean(y) - m * mean(x)
+	(b=b, m=m)
 end
 
-# ╔═╡ b84a7255-7b0a-4ba1-8c87-9f5d3fa32ef3
-ps = time_evolution(p0, 100)
-
-# ╔═╡ c430c4de-d9bf-44e1-aa40-6b823d718b04
+# ╔═╡ 6cf233a7-9b8b-47aa-a3ad-2440d001af73
 md"""
-Note that `ps` is a `Vector`, whose elements are each `Vector`s! I.e. we have a vector of vectors. This is often a convenient way to *build up* a matrix.
+### Julia: Named Tuples
 """
 
-# ╔═╡ 99717c6e-f713-49d5-8ee5-a08c4a464223
-ps[2]
+# ╔═╡ 613c3e5f-bbdd-4cf9-b30f-69e2c42ae0ec
+nt = (first=1, next=2, last=3.1) # kind of handy
 
-# ╔═╡ 242ea831-c421-4a76-b658-2a57fa924a4f
+# ╔═╡ 4cce580b-0032-419c-b386-e470b084ab96
+typeof( nt )
+
+# ╔═╡ 5503b4de-0b53-4223-8ce0-5e014be3f7ab
+plot!(x -> m*x + b, lw=3, alpha=0.7)
+
+# ╔═╡ 05e512ca-3123-48d9-9c11-5d6e9d90ef95
 md"""
-t = $(@bind tt Slider(1:length(ps), show_value=true, default=1))
+## The Linear Algebraist's Formula
 """
 
-# ╔═╡ aeaef573-1e90-45f3-a7fe-31ec5e2808c4
-bar(ps[tt], ylim=(0, 1), leg=false, size=(500, 300), alpha=0.5)
-
-# ╔═╡ efe186da-3273-4767-aafc-fc8eae01dbd9
+# ╔═╡ 939900b4-5327-43b4-883f-740c173c0db4
 md"""
-### Concatenating vectors into a matrix
+This is even shorter, but you need to know linear algebra. But it also generalizes.
 """
 
-# ╔═╡ 61201091-b8b3-4776-9be9-4c23d5ba88ba
+# ╔═╡ e0b4c2a9-a68b-47af-bf9c-f1a9f0256fd4
+[one.(x) x]\y  # even shorter but you need to know linear algebra, but generalizes
+
+# ╔═╡ 6d25e38e-c18a-48b3-8b12-b670f5a5180f
 md"""
-Now we want to visualise this in a different way, for which we must join up (**concatenate**) all the probability vectors into a matrix:
+# Optimization Methods
+
+Since the problem is an optimization problem, we can use optimization software to obtain an answer.  This is overkill for lines, but generalizes to so many nonlinear situations, including neural networks as in machine learning.
 """
 
-# ╔═╡ 66c4aed3-a04b-4a09-b954-79e816d2a3f7
-M = reduce(hcat, ps)'
-
-# ╔═╡ b135f6be-5e82-4c72-af11-0eb0d4141dec
+# ╔═╡ f291c0cb-51ee-4b30-9e07-e7cf374f809e
 md"""
-We can visualise the matrix with a **heat map**:
+## Optim.jl: A package written entirely in Julia for optimization
 """
 
-# ╔═╡ e74e18e3-ad08-4a53-a803-cd53564dca65
-heatmap(M, yflip=true)
-
-# ╔═╡ ed02f00f-1bcd-43fa-a56c-7be9968614cc
+# ╔═╡ aa06a447-d6c5-48ee-9864-c1f431fe5e4b
 md"""
-We can also visualise this as a 3D surface:
+[Optim.jl Documentation](https://julianlsolvers.github.io/Optim.jl/stable/#)
 """
 
-# ╔═╡ 8d453f89-4a4a-42d0-8a00-9b153a3f435e
-plotly()
-
-# ╔═╡ f7de29b5-2a51-45e4-a0a5-f7f602681303
-surface(M)
-
-# ╔═╡ 7e817bad-dc51-4c29-a4fc-f7a8bb3663ca
+# ╔═╡ d3edfb26-7258-45a3-a88c-60831338df1f
 md"""
-But this is not necessarily very clear, so let's draw it ourselves as stacked histograms:
+We can  ask software to just solve the problem
+
+$$\min_{b,m} \sum_{i=1}^n  [ (b + m x_i) - y_i]^2$$
+
+or
+``\min_{b,m}``  `loss(b,m)`
+
 """
 
-# ╔═╡ 403d607b-6171-431b-a058-0aad0909846f
-gr()
+# ╔═╡ 372b304a-3f57-4bec-88df-3d51ded57d5c
+loss( (b, m) ) = sum( (b + m*x[i] - y[i])^2  for i=1:n )
 
-# ╔═╡ 80e033c4-a862-443d-a198-932f5822a44e
-ylabels = [-(grid_size÷2):grid_size÷2;]
+# ╔═╡ 13b9ff38-225d-4ec1-be7f-bf0e0f5b4076
+result =  optimize(loss, [0.0,0.0] )  # optimize f with starting guess
 
-# ╔═╡ c8c16c14-26b0-4f83-8135-4f862ed90686
-begin
-	plot(leg=false)
-	
-	for which in 1:15
-		for i in 1:length(ps[which])
-			plot!([which, which], [-grid_size÷2 + i, -grid_size÷2 + i], [0, ps[which][i] ], c=which, alpha=0.8, lw = 2)
-		end
-	end
-	
-	xlims!(1, 15)
-	
-	plot!()
-end
+# ╔═╡ 7bd9bb8f-36c5-4ae1-ba20-25732d7fef2e
+result.minimizer
 
-# ╔═╡ 29612df6-203f-42bc-b53b-86af618d60ec
+# ╔═╡ 0af48ea2-698e-4919-aa96-97c5f46a928b
+md"""
+### Functions of Functions and Computing Power
+
+Optimization such as 
+``\min_{b,m}``  `loss(b, m)`
+is an example of a fairly heavy function of a function.  By this we mean that the input is a *function* such as  `loss(b, m)` and the output is the location or value of a minimum, say.  By "heavy" we mean that typically a large amount of computing power is needed.
+
+Not that many years ago, computers were not strong enough for realistic problems.  Modern-day machine learning and so much more is enabled because computers can now surround entire codes with optimization, or if the software is compatible, automatic differentiation.  
+"""
+
+# ╔═╡ 10386ce6-82fd-46ea-a44a-6ba14c5b0cd9
+md"""
+## JuMP.jl: A popular modelling language for Optimization Problems
+
+JuMP = Julia for Mathematical Programming
+"""
+
+# ╔═╡ b7d8f11d-91ce-4b3a-87a1-1aa162e198ff
 let
-	color_list = [:red, RGB(0, 1, 0.1), :blue]
-	xs = []
-	ys = []
-	zs = []
-	cs = []
-	cs2 = []
 	
-	for which in 1:15
-		for i in 1:length(ps[which])
-			push!(xs, which, which, NaN)
-			push!(ys, ylabels[i], ylabels[i], NaN)
-			push!(zs, 0, ps[which][i], NaN)
-			# push!(zs, 0, 1, NaN)D
-			push!(cs, color_list[mod1(which, 3)], color_list[mod1(which, 3)], color_list[mod1(which, 3)])
-		end
-		push!(cs2, which)
-	end
-				# plot(xs, ys, zs)
+	n = length(x)
+	model = Model(Ipopt.Optimizer)
 	
-	plot(leg=false)
-	
-	plot!(1:15, [0; cumsum(sign.(randn(14)))], zeros(15), alpha=0.6, m=:o, lw=2, c=color_list)
-	plot!(xs, ys, zs, c=cs, xlims=(1, 15), ylims=(-30, 30), zlims=(0, 1), lw=2.5, alpha=0.7, xticks=(1:15), yticks=(-20:10:20))
-	
-	xlabel!("t")
-	ylabel!("space")
+	@variable(model, b)
+	@variable(model, m)
 
+    @objective(model, Min, sum( (b + m*x[i] - y[i])^2 for i in 1:n) )
+
+	# set_silent(model)
+	optimize!(model)
+	
+	(b=value(b), m=value(m))
 end
+
+# ╔═╡ 5ca85768-a19e-4ddf-89a4-88dca599d7a7
+md"""
+# Gradients
+"""
+
+# ╔═╡ dd39b088-f59f-43fa-bce0-5076398238f9
+md"""
+The above optimization methods made no explicit mention of derivative or gradient information.  For simple problems, gradients can be hand calculated, but for many real problems this is impractical.
+"""
+
+# ╔═╡ 5f41acf0-22bd-4224-a65a-81bd656e1c07
+md"""
+### Hand Computation
+"""
+
+# ╔═╡ 84f3a912-031c-40ed-ae29-02bbcc7b4612
+md"""
+``  \frac{\partial}{\partial b}\sum_{i=1}^n  ( (b + m x_i) - y_i)^2 
+=   2\sum_{i=1}^n  ( (b + m x_i) - y_i) `` 
+
+
+``   \frac{\partial}{\partial m }\sum_{i=1}^n  ( (b + m x_i) - y_i)^2 
+=   2\sum_{i=1}^n  x_i( (b + m x_i) - y_i) `` 
+"""
+
+# ╔═╡ 6f64ede7-612e-47b3-b3a4-d22a1992a98d
+begin
+	∇loss(b,m,i) = 2*(b+m*x[i]-y[i]) .* [1,x[i]] # ith summand
+	∇loss(b,m) = sum(∇loss(b,m,i) for i=1:n)
+	
+end
+
+# ╔═╡ 36300b71-5a96-4964-b661-93de5631cf07
+md"""
+### Finite Difference Evaluation
+"""
+
+# ╔═╡ ad578b33-4387-49f5-b39d-92e05fca4ea5
+∇loss(.1,.3)
+
+# ╔═╡ 67fd90d7-bb34-411f-89f1-a410e6fb29ba
+begin # finite difference
+	ϵ = .000000001
+	([loss([.1+ϵ ,.3]);loss([.1 ,.3+ϵ])] .- loss([.1 ,.3])) ./ ϵ
+end
+
+# ╔═╡ 3e229e4a-a697-460e-b995-a4773a6aca70
+md"""
+### Automatic Differentiation (AutoDiff)
+ We're all so good at calculus I suppose, but nothing like letting the computer do it.  For real problems, what you learned in calculus is impractical. Note: Autodiff is not finite differences.  It is not as problematic as finite differences is in that
+with finite differences it can be hard to know which ϵ to use, etc.
+"""
+
+# ╔═╡ 7566cb7e-f5da-4b81-af07-bf2c86963333
+∇loss(.1,.3) # hand computation
+
+# ╔═╡ e6d9aafd-fbd6-4ec4-a4a1-740a4e889dc5
+ForwardDiff.gradient( loss, [.1,.3])
+
+# ╔═╡ c9417d90-a9cb-4655-a258-8a8898e5576a
+md"""
+# Gradient Descent can be difficult for complicated functions
+"""
+
+# ╔═╡ 6535280a-e0ce-4e13-86dd-165d5f06cfe7
+let
+	b, m = 0, 0  # starting guess
+	
+	for i=1:25
+		db, dm = ∇loss(b,m)
+		
+		# Getting a good step size can be really hard
+		# I worked out the line search η by hand
+		η = sum( (b+m*x[i]-y[i])*(db+dm*x[i]) for i=1:n)/sum( (db+dm*x[i])^2 for i=1:n)
+		
+		b, m  = (b, m) .- η .* (db, dm)
+	end
+	(b=b, m=m)
+	
+end
+
+# ╔═╡ 4c285bc2-b3c2-4d20-a904-ecaa07795342
+md"""
+Hoping for
+	
+`(b=-18.1716, m=0.56601)`
+"""
+
+# ╔═╡ 592397eb-ec52-423b-925b-d8becb9eac8e
+md"""
+# Stochastic Gradient Descent
+
+Pick one term of the sum (or a few of them) and update according to the
+respective gradient. This is what works in machine learning.
+"""
+
+# ╔═╡ 7086950b-c8db-49d4-b095-15be91c73b56
+let
+	b, m  = 0.0, 0.0
+	for t=1:10_000_000
+	    η = .00002  # there seems to be an art to picking these steplengths
+	 
+	    b, m  =  (b, m) .- η *∇loss(b,m, rand(1:n))
+	   
+	end
+   	(b=b, m=m)
+end
+
+# ╔═╡ 327514f1-8081-4a6c-8be4-8ffd52ed3c46
+md"""
+# Bells and Whistles for optim.jl
+"""
+
+# ╔═╡ 98e00b2d-0802-4160-8e5c-302be5226916
+optimize(loss, [0.0,0.0], BFGS(),  autodiff=:forward)
+
+# ╔═╡ ef165ca5-bf4f-465e-8e9a-df1aec2d7caa
+optimize(loss, [0.0,0.0], BFGS() )
+
+# ╔═╡ 0305b418-51bb-47bb-98fb-319fc26b94cf
+optimize(loss, [0.0,0.0], GradientDescent() )
+
+# ╔═╡ 304a3a6e-c8c3-48d8-a101-313b3aa062f2
+optimize(loss, [0.0,0.0], GradientDescent(), autodiff=:forward )
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Ipopt = "b6b21f68-93f8-5de0-b562-5493be1d77c9"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
+ForwardDiff = "~0.10.28"
+Ipopt = "~1.0.2"
+JuMP = "~1.0.0"
+Optim = "~1.7.0"
 Plots = "~1.29.0"
 PlutoUI = "~0.7.38"
 """
@@ -515,6 +394,12 @@ PlutoUI = "~0.7.38"
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
+
+[[ASL_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "6252039f98492252f9e47c312c8ffda0e3b9e78d"
+uuid = "ae81ac8f-d209-56e5-92de-9978fef736f9"
+version = "0.1.3+0"
 
 [[AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -531,11 +416,23 @@ version = "3.3.3"
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
+[[ArrayInterface]]
+deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
+git-tree-sha1 = "81f0cb60dc994ca17f68d9fb7c942a5ae70d9ee4"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "5.0.8"
+
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[BenchmarkTools]]
+deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
+git-tree-sha1 = "4c10eee4af024676200bc7752e536f858c6b8f93"
+uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+version = "1.3.1"
 
 [[Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -549,6 +446,12 @@ git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
 
+[[Calculus]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
+uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
+version = "0.5.1"
+
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "9950387274246d08af38f6eef8cb5480862a435f"
@@ -560,6 +463,18 @@ deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
 git-tree-sha1 = "1e315e3f4b0b7ce40feded39c73049692126cf53"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.3"
+
+[[CodecBzip2]]
+deps = ["Bzip2_jll", "Libdl", "TranscodingStreams"]
+git-tree-sha1 = "2e62a725210ce3c3c2e1a3080190e7ca491f18d7"
+uuid = "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
+version = "0.7.2"
+
+[[CodecZlib]]
+deps = ["TranscodingStreams", "Zlib_jll"]
+git-tree-sha1 = "ded953804d019afa9a3f98981d99b33e3db7b6da"
+uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
+version = "0.7.0"
 
 [[ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Random"]
@@ -584,6 +499,12 @@ deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
 git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
+
+[[CommonSubexpressions]]
+deps = ["MacroTools", "Test"]
+git-tree-sha1 = "7b8a93dba8af7e3b42fecabf646260105ac373f7"
+uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
+version = "0.3.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
@@ -625,6 +546,18 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
+[[DiffResults]]
+deps = ["StaticArrays"]
+git-tree-sha1 = "c18e98cba888c6c25d1c3b048e4b3380ca956805"
+uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
+version = "1.0.3"
+
+[[DiffRules]]
+deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
+git-tree-sha1 = "28d605d9a0ac17118fe2c5e9ce0fbb76c3ceb120"
+uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
+version = "1.11.0"
+
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -663,6 +596,18 @@ git-tree-sha1 = "d8a578692e3077ac998b50c0217dfd67f21d1e5f"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.0+0"
 
+[[FillArrays]]
+deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
+git-tree-sha1 = "246621d23d1f43e3b9c368bf3b72b2331a27c286"
+uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
+version = "0.13.2"
+
+[[FiniteDiff]]
+deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "51c8f36c81badaa0e9ec405dcbabaf345ed18c84"
+uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
+version = "2.11.1"
+
 [[FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
@@ -680,6 +625,12 @@ deps = ["Printf"]
 git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
 uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.4.2"
+
+[[ForwardDiff]]
+deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
+git-tree-sha1 = "7a380de46b0a1db85c59ebbce5788412a39e4cb7"
+uuid = "f6369f11-7733-5829-9624-2563aa707210"
+version = "0.10.28"
 
 [[FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
@@ -770,6 +721,11 @@ git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.2"
 
+[[IfElse]]
+git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.1"
+
 [[IniFile]]
 git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
 uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
@@ -784,6 +740,18 @@ deps = ["Test"]
 git-tree-sha1 = "336cc738f03e069ef2cac55a104eb823455dca75"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.4"
+
+[[Ipopt]]
+deps = ["Ipopt_jll", "MathOptInterface"]
+git-tree-sha1 = "8b7b5fdbc71d8f88171865faa11d1c6669e96e32"
+uuid = "b6b21f68-93f8-5de0-b562-5493be1d77c9"
+version = "1.0.2"
+
+[[Ipopt_jll]]
+deps = ["ASL_jll", "Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "MUMPS_seq_jll", "OpenBLAS32_jll", "Pkg"]
+git-tree-sha1 = "e3e202237d93f18856b6ff1016166b0f172a49a8"
+uuid = "9cc047cb-c261-5740-88fc-0cf96f7bdcc7"
+version = "300.1400.400+0"
 
 [[IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
@@ -817,6 +785,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.2+0"
+
+[[JuMP]]
+deps = ["Calculus", "DataStructures", "ForwardDiff", "LinearAlgebra", "MathOptInterface", "MutableArithmetics", "NaNMath", "OrderedCollections", "Printf", "SparseArrays", "SpecialFunctions"]
+git-tree-sha1 = "936e7ebf6c84f0c0202b83bb22461f4ebc5c9969"
+uuid = "4076af6c-e467-56ae-b986-b466b2749572"
+version = "1.0.0"
 
 [[LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -914,6 +888,12 @@ git-tree-sha1 = "7f3efec06033682db852f8b3bc3c1d2b0a0ab066"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
 version = "2.36.0+0"
 
+[[LineSearches]]
+deps = ["LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "Printf"]
+git-tree-sha1 = "f27132e551e959b3667d8c93eae90973225032dd"
+uuid = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
+version = "7.1.1"
+
 [[LinearAlgebra]]
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -927,6 +907,18 @@ version = "0.3.15"
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
+[[METIS_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "1d31872bb9c5e7ec1f618e8c4a56c8b0d9bddc7e"
+uuid = "d00139f3-1899-568f-a2f0-47f597d42d70"
+version = "5.1.1+0"
+
+[[MUMPS_seq_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "METIS_jll", "OpenBLAS32_jll", "Pkg"]
+git-tree-sha1 = "29de2841fa5aefe615dea179fcde48bb87b58f57"
+uuid = "d7ed1dd3-d0ae-5e8e-bfb4-87a502085b8d"
+version = "5.4.1+0"
+
 [[MacroTools]]
 deps = ["Markdown", "Random"]
 git-tree-sha1 = "3d3e902b31198a27340d0bf00d6ac452866021cf"
@@ -936,6 +928,12 @@ version = "0.5.9"
 [[Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
+
+[[MathOptInterface]]
+deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "JSON", "LinearAlgebra", "MutableArithmetics", "OrderedCollections", "Printf", "SparseArrays", "Test", "Unicode"]
+git-tree-sha1 = "23c99cadd752cc0b70d4c74c969a679948b1bb6a"
+uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
+version = "1.2.0"
 
 [[MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "Random", "Sockets"]
@@ -964,10 +962,22 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
-[[NaNMath]]
-git-tree-sha1 = "737a5957f387b17e74d4ad2f440eb330b39a62c5"
-uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
+[[MutableArithmetics]]
+deps = ["LinearAlgebra", "SparseArrays", "Test"]
+git-tree-sha1 = "ba8c0f8732a24facba709388c74ba99dcbfdda1e"
+uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
 version = "1.0.0"
+
+[[NLSolversBase]]
+deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
+git-tree-sha1 = "50310f934e55e5ca3912fb941dec199b49ca9b68"
+uuid = "d41bc354-129a-5804-8e4c-c37616107c6c"
+version = "7.8.2"
+
+[[NaNMath]]
+git-tree-sha1 = "b086b7ea07f8e38cf122f5016af580881ac914fe"
+uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
+version = "0.3.7"
 
 [[NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
@@ -977,6 +987,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "887579a3eb005446d514ab7aeac5d1d027658b8f"
 uuid = "e7412a2a-1a6e-54c0-be00-318e2571c051"
 version = "1.3.5+1"
+
+[[OpenBLAS32_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "9c6c2ed4b7acd2137b878eb96c68e63b76199d0f"
+uuid = "656ef2d0-ae68-5445-9ca0-591084a874a2"
+version = "0.3.17+0"
 
 [[OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -998,6 +1014,12 @@ git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.5+0"
 
+[[Optim]]
+deps = ["Compat", "FillArrays", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
+git-tree-sha1 = "7a28efc8e34d5df89fc87343318b0a8add2c4021"
+uuid = "429524aa-4258-5aef-a3af-852621145aeb"
+version = "1.7.0"
+
 [[Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "51a08fb14ec28da2ec7a927c4337e4332c2a4720"
@@ -1014,6 +1036,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
 uuid = "2f80f16e-611a-54ab-bc61-aa92de5b98fc"
 version = "8.44.0+0"
+
+[[Parameters]]
+deps = ["OrderedCollections", "UnPack"]
+git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
+uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+version = "0.12.3"
 
 [[Parsers]]
 deps = ["Dates"]
@@ -1055,6 +1083,12 @@ git-tree-sha1 = "670e559e5c8e191ded66fa9ea89c97f10376bb4c"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.38"
 
+[[PositiveFactorizations]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "17275485f373e6673f7e7f97051f703ed5b15b20"
+uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
+version = "0.2.4"
+
 [[Preferences]]
 deps = ["TOML"]
 git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
@@ -1064,6 +1098,10 @@ version = "1.3.0"
 [[Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[Profile]]
+deps = ["Printf"]
+uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
 [[Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
@@ -1148,6 +1186,12 @@ git-tree-sha1 = "5ba658aeecaaf96923dce0da9e703bd1fe7666f9"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.1.4"
 
+[[Static]]
+deps = ["IfElse"]
+git-tree-sha1 = "5309da1cdef03e95b73cd3251ac3a39f887da53e"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "0.6.4"
+
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
 git-tree-sha1 = "cd56bf18ed715e8b09f06ef8c6b781e6cdc49911"
@@ -1206,6 +1250,12 @@ version = "0.1.1"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[[TranscodingStreams]]
+deps = ["Random", "Test"]
+git-tree-sha1 = "216b95ea110b5972db65aa90f88d8d89dcb8851c"
+uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+version = "0.9.6"
+
 [[Tricks]]
 git-tree-sha1 = "6bac775f2d42a611cdfcd1fb217ee719630c4175"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
@@ -1219,6 +1269,11 @@ version = "1.3.0"
 [[UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[[UnPack]]
+git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
+uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+version = "1.0.2"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -1450,78 +1505,60 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╟─e46441c4-97bd-11eb-330c-97bd5ac41f9e
-# ╠═85b45a43-d7bf-4597-a1a6-329b41dce20d
-# ╠═85c26eb4-c258-4a8b-9415-7b5f7ddff02a
-# ╟─2d48bfc6-9617-11eb-3a85-279bebd21332
-# ╟─30162386-039f-4cd7-9121-a3382be3c294
-# ╟─4e7b163e-dfd0-457e-b1f3-8807a4d8060a
-# ╠═e8ceab7b-45db-4393-bb8e-e000ecf78d2c
-# ╠═2d4dffb9-39e4-48de-9688-980b96814c9f
-# ╟─8ff66523-bc2e-4c53-975b-8ba4f99eb1c6
-# ╟─2868dd57-7164-4162-8c5d-30628dedeb7a
-# ╠═f6009473-d3c1-444f-88ae-814f770e811b
-# ╟─9a368602-acd3-43fb-9dff-e407a4bab930
-# ╟─67517333-175f-48c4-a915-76658cbf1304
-# ╠═d6832372-d336-4a54-bbcf-d0bb70e4de64
-# ╟─35f14826-f1e4-4977-a31a-0f6148fe25ad
-# ╠═7468fc5d-7f35-45e2-b5fc-7e63b562bc8f
-# ╠═1ca8aa3b-b05d-40f6-a925-2f0248b79ca2
-# ╟─38d88b7c-3b4f-430b-8d3c-f672ab0c7a49
-# ╟─f4c9b02b-738b-4de1-9e9d-05b1616bee0b
-# ╟─d1c47afa-ab7f-4543-a161-e3ceb6f11eb4
-# ╠═bf78e00f-05d9-4a05-8512-4924ef9e25f7
-# ╟─b948830f-ead1-4f36-a237-c998f2f7deb8
-# ╠═15223c51-8d31-4a50-a8ff-1cb7d35de454
-# ╟─0bd45c4a-3286-427a-a927-15869be2ebfe
-# ╠═999fb608-fb1a-46cb-82ca-f3f31fe617e1
-# ╟─6509e69a-6e50-4816-a98f-67ba437383fb
-# ╟─e58976a9-1784-441e-bb76-3011538b8ad0
-# ╟─1efc2b68-9313-424f-9850-eb4496cc8486
-# ╟─6e93ffda-217b-4d46-86b5-534ddc1bae90
-# ╟─396d2490-3cb9-4f68-8fdf-9209d2010e02
-# ╟─dc1c22e8-1c7b-43b7-8421-c2ca708931a5
-# ╟─e7a52b56-322c-4478-a670-dec1013c9bd8
-# ╟─5f136388-5573-4814-a088-a66278acdbbe
-# ╟─e440dc3b-bafd-4e0c-9fe8-13fce8eea22d
-# ╟─89d3e90d-3685-473d-aea4-0b7c5b80d7f7
-# ╟─203eea14-1c68-4a9f-ab18-9a2e5f408a79
-# ╠═b6d4b045-a39f-4236-ace2-9f631e853d1b
-# ╟─e61b56be-d334-4c8f-aa8e-887bb27c058c
-# ╠═782f0b9a-3793-4abb-826b-9e14d6eae690
-# ╟─1764b56a-f297-4a4e-a931-31aa987ec785
-# ╠═8082092b-b6bf-4619-8776-39fdd6c9b7c1
-# ╠═34c0b850-5e95-4eb9-8435-3aae8d124772
-# ╟─4115f7cb-d45f-4cc2-86bf-316c074393f8
-# ╟─6bc2f20d-3d09-425b-a471-44090dc3161e
-# ╟─98994cb9-45dc-48aa-b62d-2407f7184bee
-# ╟─f11f8d7d-cd3f-4585-aab4-083b892c6d4c
-# ╠═fb804fe2-58be-46c9-9200-ceb8863d052c
-# ╟─40e457b4-616c-4fab-9c8e-2e5063129597
-# ╟─979c1fbd-c9f6-4e8b-a648-6a0210fc9e7f
-# ╟─583e3a92-01e7-4b88-9be0-f1e3b3c95005
-# ╠═0b26efab-4e93-4d53-9c4d-faea68d12174
-# ╟─b9ce5af1-84f7-4a2d-92c9-de2c5498a88d
-# ╠═b48e55b7-4b56-41aa-9796-674d04adf5df
-# ╟─53a36c1a-0b8c-4099-8854-08d73c9f118e
-# ╠═6b298184-32c6-412d-a900-b113d6bd3d53
-# ╠═b84a7255-7b0a-4ba1-8c87-9f5d3fa32ef3
-# ╟─c430c4de-d9bf-44e1-aa40-6b823d718b04
-# ╠═99717c6e-f713-49d5-8ee5-a08c4a464223
-# ╟─242ea831-c421-4a76-b658-2a57fa924a4f
-# ╠═aeaef573-1e90-45f3-a7fe-31ec5e2808c4
-# ╟─efe186da-3273-4767-aafc-fc8eae01dbd9
-# ╟─61201091-b8b3-4776-9be9-4c23d5ba88ba
-# ╠═66c4aed3-a04b-4a09-b954-79e816d2a3f7
-# ╟─b135f6be-5e82-4c72-af11-0eb0d4141dec
-# ╠═e74e18e3-ad08-4a53-a803-cd53564dca65
-# ╟─ed02f00f-1bcd-43fa-a56c-7be9968614cc
-# ╠═8d453f89-4a4a-42d0-8a00-9b153a3f435e
-# ╠═f7de29b5-2a51-45e4-a0a5-f7f602681303
-# ╟─7e817bad-dc51-4c29-a4fc-f7a8bb3663ca
-# ╠═403d607b-6171-431b-a058-0aad0909846f
-# ╠═80e033c4-a862-443d-a198-932f5822a44e
-# ╟─c8c16c14-26b0-4f83-8135-4f862ed90686
-# ╠═29612df6-203f-42bc-b53b-86af618d60ec
+# ╟─945c2bf1-d7dc-42c9-93d7-fd754f8fb1d7
+# ╠═400ebe26-0dea-4cf2-8744-6c73a45cd33e
+# ╠═b8d66df5-f593-40b4-8c46-3b638f9cc3e1
+# ╟─77253dd5-a2c8-4cf5-890a-5c8420c395b7
+# ╟─dccbd53d-33ed-4d37-9d2c-da76e090d5dd
+# ╟─235919f2-a4b0-4bb5-870c-82809a170195
+# ╟─2ed86f33-bced-413c-9a8d-c6e49bfe5afb
+# ╟─a78aff8d-5ac0-4915-92de-ffefdb08f88e
+# ╟─0e43a6d3-7198-422b-b50c-b9caeaa53074
+# ╠═f8c98995-2152-4d45-996a-a0532a233719
+# ╠═8a5f1fdc-3cef-4c02-a73f-e5975b57b15a
+# ╠═647093eb-a7e3-4175-8091-29c33407e5c9
+# ╟─cdc25782-65a8-43c5-8090-c1241b798b1a
+# ╟─9ec4dd43-c95a-4f11-b844-fd6ccc93bb68
+# ╟─9276b315-27b2-4b01-8fc8-4ebbba58d080
+# ╟─d22fd4bd-acfe-4e27-a484-3c2d6138f44e
+# ╠═da0d208b-7d30-470a-b180-4cbfa98298e7
+# ╟─6cf233a7-9b8b-47aa-a3ad-2440d001af73
+# ╠═613c3e5f-bbdd-4cf9-b30f-69e2c42ae0ec
+# ╠═4cce580b-0032-419c-b386-e470b084ab96
+# ╠═5503b4de-0b53-4223-8ce0-5e014be3f7ab
+# ╟─05e512ca-3123-48d9-9c11-5d6e9d90ef95
+# ╟─939900b4-5327-43b4-883f-740c173c0db4
+# ╠═e0b4c2a9-a68b-47af-bf9c-f1a9f0256fd4
+# ╟─6d25e38e-c18a-48b3-8b12-b670f5a5180f
+# ╟─f291c0cb-51ee-4b30-9e07-e7cf374f809e
+# ╟─aa06a447-d6c5-48ee-9864-c1f431fe5e4b
+# ╟─d3edfb26-7258-45a3-a88c-60831338df1f
+# ╠═372b304a-3f57-4bec-88df-3d51ded57d5c
+# ╠═13b9ff38-225d-4ec1-be7f-bf0e0f5b4076
+# ╠═7bd9bb8f-36c5-4ae1-ba20-25732d7fef2e
+# ╟─0af48ea2-698e-4919-aa96-97c5f46a928b
+# ╟─10386ce6-82fd-46ea-a44a-6ba14c5b0cd9
+# ╠═b7d8f11d-91ce-4b3a-87a1-1aa162e198ff
+# ╟─5ca85768-a19e-4ddf-89a4-88dca599d7a7
+# ╟─dd39b088-f59f-43fa-bce0-5076398238f9
+# ╟─5f41acf0-22bd-4224-a65a-81bd656e1c07
+# ╟─84f3a912-031c-40ed-ae29-02bbcc7b4612
+# ╠═6f64ede7-612e-47b3-b3a4-d22a1992a98d
+# ╟─36300b71-5a96-4964-b661-93de5631cf07
+# ╠═ad578b33-4387-49f5-b39d-92e05fca4ea5
+# ╠═67fd90d7-bb34-411f-89f1-a410e6fb29ba
+# ╟─3e229e4a-a697-460e-b995-a4773a6aca70
+# ╠═7566cb7e-f5da-4b81-af07-bf2c86963333
+# ╠═e6d9aafd-fbd6-4ec4-a4a1-740a4e889dc5
+# ╟─c9417d90-a9cb-4655-a258-8a8898e5576a
+# ╠═6535280a-e0ce-4e13-86dd-165d5f06cfe7
+# ╟─4c285bc2-b3c2-4d20-a904-ecaa07795342
+# ╟─592397eb-ec52-423b-925b-d8becb9eac8e
+# ╠═7086950b-c8db-49d4-b095-15be91c73b56
+# ╟─327514f1-8081-4a6c-8be4-8ffd52ed3c46
+# ╠═98e00b2d-0802-4160-8e5c-302be5226916
+# ╠═ef165ca5-bf4f-465e-8e9a-df1aec2d7caa
+# ╠═0305b418-51bb-47bb-98fb-319fc26b94cf
+# ╠═304a3a6e-c8c3-48d8-a101-313b3aa062f2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

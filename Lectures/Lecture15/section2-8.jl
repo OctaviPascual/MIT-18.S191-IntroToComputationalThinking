@@ -14,10 +14,10 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 85b45a43-d7bf-4597-a1a6-329b41dce20d
-using PlutoUI, Plots, LinearAlgebra, SparseArrays
+# ╔═╡ d155ea12-9628-11eb-347f-7754a33fd403
+using Plots, PlutoUI, DataFrames, CSV, GLM, Statistics, LinearAlgebra, Distributions
 
-# ╔═╡ e46441c4-97bd-11eb-330c-97bd5ac41f9e
+# ╔═╡ 4ea0ccfa-9622-11eb-1cf0-e9ae2f927dd2
 html"""
 <div style="
 position: absolute;
@@ -46,9 +46,9 @@ font-feature-settings: 'lnum', 'pnum';
 "> <p style="
 font-size: 1.5rem;
 opacity: .8;
-"><em>Section 2.6</em></p>
+"><em>Section 2.8</em></p>
 <p style="text-align: center; font-size: 2rem;">
-<em> Random Walks II </em>
+<em> Linear Model, Data Science, & Simulations </em>
 </p>
 
 <p style="
@@ -58,7 +58,7 @@ opacity: .8;
 "><em>Lecture Video</em></p>
 <div style="display: flex; justify-content: center;">
 <div  notthestyle="position: relative; right: 0; top: 0; z-index: 300;">
-<iframe src="https://www.youtube.com/embed/pIAFHyLmwbM" width=400 height=250  frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+<iframe src="https://www.youtube.com/embed/O6NTKsR8TjQ" width=400 height=250  frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 </div>
 </div>
 
@@ -68,446 +68,525 @@ overflow-x: hidden;
 }
 </style>"""
 
-# ╔═╡ 85c26eb4-c258-4a8b-9415-7b5f7ddff02a
-TableOfContents(aside=true)
+# ╔═╡ 01506de2-918a-11eb-2a4d-c554a6e54631
+TableOfContents()
 
-# ╔═╡ 2d48bfc6-9617-11eb-3a85-279bebd21332
+# ╔═╡ 877deb2c-702b-457b-a54b-f27c277928d4
 md"""
-# Julia concepts
+# Julia concepts for data science
+- Data Frames (`DataFrames.jl`)
+- `CSVread`, `CSVwrite` (`CSV.jl`)
+- `lm` (linear model) (`GLM.jl`)
+- `@formula` (formula macro to specify variables to analyze) (`GLM.jl`)
 
-- Customised display of objects
-- Structured matrices in Julia
-- `cumsum`
-- Vectors of vectors
-- Concatenation of vectors: `hcat`
+- Underscore as digits separator (e.g. `1_000` for 1000)
 
-
-- `heatmap` (Plots.jl)
-- `surface` (Plots.jl)
-
+- The value of fast simulations.
 """
 
-# ╔═╡ 30162386-039f-4cd7-9121-a3382be3c294
+# ╔═╡ 36ce167f-382c-4b9a-be34-83250b10c4e5
 md"""
-# Pascal's triangle
-
+In this lecture we will simulate a real world statistical application
+for the purpose of understanding what statistics is about.  It is very
+	helpful in simulations to be able to run many examples fast.
 """
 
-# ╔═╡ 4e7b163e-dfd0-457e-b1f3-8807a4d8060a
+# ╔═╡ 83912943-a847-420a-bfdb-450027b631e8
 md"""
-Let's start by thinking about Pascal's triangle. (Note that [Pascal was not the first person to study these numbers](https://en.wikipedia.org/wiki/Pascal%27s_triangle).)
+# Fahrenheit and Celsius Data Set
 """
 
-# ╔═╡ e8ceab7b-45db-4393-bb8e-e000ecf78d2c
-pascal(N) = [binomial(n, k) for n=0:N, k=0:N]
+# ╔═╡ 280d112f-d34a-4cc4-9e3a-4ebbfcd5eb51
+n = 10
 
-# ╔═╡ 2d4dffb9-39e4-48de-9688-980b96814c9f
-pascal(10)
+# ╔═╡ b5031c96-db57-4baf-b271-6bb12e29de9b
+x = sort((rand( -10:100, n)))
 
-# ╔═╡ 8ff66523-bc2e-4c53-975b-8ba4f99eb1c6
-md"""
-The non-zero entries are the **binomial coefficients**: the $k$th entry on the $n$th row is the coefficient of $x^k$ in the expansion $(1 + x)^n$, starting from $n=0$ in the first row and $k=0$ in the first column.
-"""
+# ╔═╡ c2f77e8f-a8c0-4144-a8b4-b25dd98ed234
+y = 5/9 .* x  .- 17.7777777 #  same as y =  5/9 .* (x .- 32)
 
-# ╔═╡ 2868dd57-7164-4162-8c5d-30628dedeb7a
-md"""
-Note that there are 0s above the main diagonal -- in other words the matrix is **lower triangular**.
-
-Julia has special types to represent some classes of structured matrices in the standard library `LinearAlgebra` package:
-"""
-
-# ╔═╡ f6009473-d3c1-444f-88ae-814f770e811b
-L = LowerTriangular(pascal(10))
-
-# ╔═╡ 9a368602-acd3-43fb-9dff-e407a4bab930
-md"""
-We see that the display is special: the known "**structural**" zeros are shown as dots, instead of numbers.
-"""
-
-# ╔═╡ 67517333-175f-48c4-a915-76658cbf1304
-md"""
-As we have already seen, Julia also has a sparse matrix type that we could use for this, in the `SparseArrays` standard library:
-"""
-
-# ╔═╡ d6832372-d336-4a54-bbcf-d0bb70e4de64
-sparse(pascal(10))  
-
-# ╔═╡ 35f14826-f1e4-4977-a31a-0f6148fe25ad
-md"""
-For fun, let's look at where the entries of Pascal's triangle are odd. We'll make a slider:
-"""
-
-# ╔═╡ 7468fc5d-7f35-45e2-b5fc-7e63b562bc8f
-@bind n_pascal Slider(1:63, show_value=true, default=1)
-
-# ╔═╡ 1ca8aa3b-b05d-40f6-a925-2f0248b79ca2
-sparse(isodd.(pascal(n_pascal)))
-
-# ╔═╡ 38d88b7c-3b4f-430b-8d3c-f672ab0c7a49
-md"""
-Note that the visual representation of a sparse matrix changes at a particular value of $n$. For larger values of $n$ the **sparsity pattern** is displayed using dots for non-zero values.
-"""
-
-# ╔═╡ f4c9b02b-738b-4de1-9e9d-05b1616bee0b
-md"""
-The pattern is quite striking! When something gets very very large, you really want sometimes to loose information to make it understandable.
-"""
-
-# ╔═╡ d1c47afa-ab7f-4543-a161-e3ceb6f11eb4
-md"""
-You may be interested to know that there is an alternative way to look at Pascal's triangle:
-"""
-
-# ╔═╡ bf78e00f-05d9-4a05-8512-4924ef9e25f7
-[binomial(i + j, i) for i = 0:10, j = 0:10]
-
-# ╔═╡ b948830f-ead1-4f36-a237-c998f2f7deb8
-md"""
-and that in fact this can be produced from the previous version using matrix multiplication!:
-"""
-
-# ╔═╡ 15223c51-8d31-4a50-a8ff-1cb7d35de454
-pascal(10) * pascal(10)'
-
-# ╔═╡ 0bd45c4a-3286-427a-a927-15869be2ebfe
-md"""
-## Convolutions build Pascal's triangle!
-"""
-
-# ╔═╡ 999fb608-fb1a-46cb-82ca-f3f31fe617e1
-pascal(6)
-
-# ╔═╡ 6509e69a-6e50-4816-a98f-67ba437383fb
-md"""
-Where do those binomial coefficients come from? That's not how we learnt to build Pascal's triangle at school!
-
-We learned to build each number up by *summing two adjacent numbers from the previous row*. In the lower-triangular representation we we sum the number immediately above with the one to the left of it.
-"""
-
-# ╔═╡ e58976a9-1784-441e-bb76-3011538b8ad0
-md"""
-We can think of this as... a **convolution** with the vector $[1, 1]$ ! 
-Recall that convolutions like this are used as **image filters**, where we want to apply the same *local* operation everywhere along a vector (i.e. one in which we modify a vector in a neighbourhood).
-"""
-
-# ╔═╡ 1efc2b68-9313-424f-9850-eb4496cc8486
-md"""
-# Random walks: Independent and identically-distributed random variables
-"""
-
-# ╔═╡ 6e93ffda-217b-4d46-86b5-534ddc1bae90
-md"""
-The discussion of Pascal's triangle and convolutions will surprisingly turn up below. For now let's go back to thinking about **random walks**.
-
-Recall that in a random walk, at each tick of a clock we take a step in space, say left or right.
-
-Each spatial step is random, so we can think of each step as being a **random variable** with a certain probability distribution, for example the random variable that takes the value $+1$ with probability $\frac{1}{2}$ and $-1$ also with probability $\frac{1}{2}$.
-
-Often we will think about random walks in which each step is "the same". What do we mean by "the same"? We don't mean that the *outcome* is the same, but rather that each step has the same *probability distribution*, i.e. the same probability of taking each possible value. In other words, each step is given by *copies of the same random variable*. 
-
-Steps are also *independent* of each other (the choice of step direction right now *does not affect* the choice at the next step). Hence the steps form a collection of **independent and identically-distributed random variables**, or IID random variables.
-"""
-
-# ╔═╡ 396d2490-3cb9-4f68-8fdf-9209d2010e02
-md"""
-## Random walks as a cumulative sum
-"""
-
-# ╔═╡ dc1c22e8-1c7b-43b7-8421-c2ca708931a5
-md"""
-Let's call the random variable that describes the $i$th *step* $X_i$. Then the overall position $S_n$ of the random walk at time $n$ is given by
-
-$$S_n = X_1 + \cdots + X_n = \sum_{i=1}^n X_i.$$
-
-(Here we have taken the initial position $S_0$ equal to 0. If the initial position is not zero, then this instead gives the **displacement** $S_n - S_0$ at time $n$.)
-
-
-Recall that by the sum of two random variables we mean a new random variable whose outcomes are sums of the outcomes, with probabilities given by taking the possible pairs of outcomes giving each new outcome.
-"""
-
-# ╔═╡ e7a52b56-322c-4478-a670-dec1013c9bd8
-md"""
-## Cumulative sum
-"""
-
-# ╔═╡ 5f136388-5573-4814-a088-a66278acdbbe
-md"""
-We previously looked at sums like this. The difference now is that we are interested in the entire **trajectory**, i.e. the sequence $S_1$, $S_2$, $\ldots$, $S_n$, $\ldots$. The trajectory is given by **partial sums**:
-"""
-
-# ╔═╡ e440dc3b-bafd-4e0c-9fe8-13fce8eea22d
-md"""
-$$\begin{align}
-S_1 & = X_1 \\
-S_2 &= X_1 + X_2 \\
-S_3 &= X_1 + X_2 + X_3
-\end{align}$$
-
-etc.
-"""
-
-# ╔═╡ 89d3e90d-3685-473d-aea4-0b7c5b80d7f7
-md"""
-Note that $S_{n+1}$ is *not* independent of $S_n$ (or the other $S_m$). E.g. if $S_{100}$ happens to be large, then $S_{101}$ will be about as large.
-
-Thinking about types, as we did a couple of lectures ago, we would need to define a *new* type to represent a random walk, since we cannot generate consecutive values as independent samples.
-"""
-
-# ╔═╡ 203eea14-1c68-4a9f-ab18-9a2e5f408a79
-md"""
-How could we calculate a trajectory of a walk? Suppose we generate steps $X_i$, e.g.
-"""
-
-# ╔═╡ b6d4b045-a39f-4236-ace2-9f631e853d1b
-steps = rand( (-1, +1), 10 )
-
-# ╔═╡ e61b56be-d334-4c8f-aa8e-887bb27c058c
-md"""
-The whole trajectory is given by the **cumulative sum** also called "prefix sum" or "scan". Julia has the function `cumsum` to calculate this:
-"""
-
-# ╔═╡ 782f0b9a-3793-4abb-826b-9e14d6eae690
-cumsum([1, 2, 3, 4])
-
-# ╔═╡ 1764b56a-f297-4a4e-a931-31aa987ec785
-md"""
-So the trajectory is given by 
-"""
-
-# ╔═╡ 8082092b-b6bf-4619-8776-39fdd6c9b7c1
-[0; cumsum(steps)]
-
-# ╔═╡ 34c0b850-5e95-4eb9-8435-3aae8d124772
-plot([0; cumsum(steps)], m=:o, leg=false, size=(500, 300))
-
-# ╔═╡ 4115f7cb-d45f-4cc2-86bf-316c074393f8
-md"""
-Note that in Julia this is just a convenience function; it will be no more performant than writing the `for` loop yourself (unlike in some other languages, where `for` loops are slow).
-"""
-
-# ╔═╡ 6bc2f20d-3d09-425b-a471-44090dc3161e
-md"""
-# Evolving probability distributions in time
-"""
-
-# ╔═╡ 98994cb9-45dc-48aa-b62d-2407f7184bee
-md"""
-So far we have looked at single trajectories of random walks. We can think of this as the equivalent of sampling using `rand`. 
-
-Suppose that we run many trajectories of a random walk. At a given time $t$ we can ask where all of the walks are by taking a histogram of the $S_t^{(k)}$, where the superscript $^{(k)}$ denotes the $k$th trajectory out of the collection.
-
-Doing so gives us the *probability distribution* of the random variable $S_t$.
-Let's call $p_i^t := \mathbb{P}(S_t = i)$ the probability of being at site $i$ at time $t$. Then the probability distribution at time $t$ is given by the collection of all the $p_i^t$; we can group these into a vector $\mathbf{p}^t$.
-
-Now we can ask what happens at the *next* time step $t+1$. Taking histograms again gives the probabilities $p_j^{t+1}$ and the vector $\mathbf{p}^t$ of all of them.
-
-But $\mathbf{p}^{t+1}$ and $\mathbf{p}^{t}$ are related in some way, since we go from $S_t$ to $S_{t+1}$ by just taking a single step. 
-
-Let's think about the case of a simple random walk in one dimension. To arrive at site $i$ at time $t+1$, we must have been in one of the *neighbouring* sites at time $t$ and jumped with probability $\frac{1}{2}$ in the direction of site $i$. Hence we have
-
-$$p_i^{t+1} = \textstyle \frac{1}{2} (p_{i-1}^{t} + p_{i+1}^{t}).$$
-
-This is sometimes called the **master equation** (even though that is rather a useless, non-descriptive name); it describes how the *probability distribution of the random walk evolves in time*.
-"""
-
-# ╔═╡ f11f8d7d-cd3f-4585-aab4-083b892c6d4c
-md"""
-## Implementing time evolution of probabilities
-
-Let's write a function to **evolve** a probability vector to the next time step for a simple random walk:
-"""
-
-# ╔═╡ fb804fe2-58be-46c9-9200-ceb8863d052c
-function evolve(p)
-	p′ = similar(p)   # make a vector of the same length and type
-	                  # to store the probability vector at the next time step
-	
-	for i in 2:length(p)-1   # iterate over the *bulk* of the system
-		
-		p′[i] = 0.5 * (p[i-1] + p[i+1])
-
-	end
-	
-	# boundary conditions:
-	p′[1] = 0
-	p′[end] = 0
-	
-	return p′
+# ╔═╡ ad161b98-f4a1-42ac-ad4f-8b71fabcfde9
+begin	
+	plot(x,y, m=:c, mc=:red,legend=false)
+	xlabel!("°F")
+	annotate!(-4,16,text("°C",11))
+	# plot!( x, (x.-30)./2) Dave's cool approximation
 end
 
-# ╔═╡ 40e457b4-616c-4fab-9c8e-2e5063129597
-md"""
-Wait... Do you recognise this?
+# ╔═╡ 8e422886-74ef-4c0f-be1e-fda238c8db44
+[x y]
 
-This is just a **convolution** again! The kernel is now $[\frac{1}{2}, 0, \frac{1}{2}]$. Apart from the extra $0$ and the $\frac{1}{2}$, this is the *same* as in Pascal's triangle... so probabilities in simple random walk behave like Pascal's triangle!
+# ╔═╡ ca21122a-2522-482a-b7ef-bd73e96cb5a9
+md"""
+## Julia: Data Frames
+I like to think of a Data Frame as a matrix with labels.
 """
 
-# ╔═╡ 979c1fbd-c9f6-4e8b-a648-6a0210fc9e7f
+# ╔═╡ 41e05b1e-8b5e-45e3-91bb-01355ade9f3d
 md"""
-Note that just as with images we have a problem at the edges of the system: We need to specify **boundary conditions** on the first and last cells. For now we have put 0s at the boundary, corresponding to probability *escaping* at the boundary: any probability that arrives at the boundary at a given time step does not stay in the system. We can think of the probability as analogous to a chemical moving through a system that leaves our system (and e.g. moves into the outside world) when it reaches an edge.
+### Data Frame by Columns with labels
 """
 
-# ╔═╡ 583e3a92-01e7-4b88-9be0-f1e3b3c95005
+# ╔═╡ 9d2e3861-ca36-406e-952d-831ca3947e44
+data = DataFrame(°F=x,°C=y) # Label = data
+
+# ╔═╡ e73854ed-3581-41c4-ada5-e48242033759
 md"""
-We also need to specify an *initial* condition $\mathbf{p}_0$. This tells us where our walker is at time $0$. Suppose that all walkers start at site $i=0$. We will place this in the middle of our vector. Then the *probability* of being at $0$ is 1 (certainty), while the probability at any other site is 0 (impossible):
+### Data Frame with a matrix
 """
 
-# ╔═╡ 0b26efab-4e93-4d53-9c4d-faea68d12174
-function initial_condition(n)
-	
-	p₀ = zeros(n)
-	p₀[n ÷ 2 + 1] = 1
-	
-	return p₀
-end
-
-# ╔═╡ b9ce5af1-84f7-4a2d-92c9-de2c5498a88d
-md"""
-Now let's evolve the probability vector in time by applying the `evolve` function repeatedly, starting from the initial probability distribution:
-"""
-
-# ╔═╡ b48e55b7-4b56-41aa-9796-674d04adf5df
-function time_evolution(p0, N)
-	ps = [p0]
-	p = p0
-	
-	for i in 1:N
-		p = evolve(p)
-		push!(ps, copy(p))
-	end
-	
-	return ps
-end
-
-# ╔═╡ 53a36c1a-0b8c-4099-8854-08d73c9f118e
-md"""
-Let's visualise this:
-"""
-
-# ╔═╡ 6b298184-32c6-412d-a900-b113d6bd3d53
+# ╔═╡ 9873d944-b611-46f9-82a7-0cf714a3078c
 begin
-	grid_size = 101
-	
-	p0 = initial_condition(grid_size)
+	data2 = DataFrame([x  y], :auto) # convert Matrix to DataFrame
+    rename!(data2,["°F","°C"]) # add column labels
 end
 
-# ╔═╡ b84a7255-7b0a-4ba1-8c87-9f5d3fa32ef3
-ps = time_evolution(p0, 100)
+# ╔═╡ 2be44753-afee-4125-b6bc-8866d2293dc2
+Matrix(data2) # Convert back to a matrix (lose label information)
 
-# ╔═╡ c430c4de-d9bf-44e1-aa40-6b823d718b04
+# ╔═╡ 6e07e8fb-fe51-4b37-bfb2-d1466e768754
 md"""
-Note that `ps` is a `Vector`, whose elements are each `Vector`s! I.e. we have a vector of vectors. This is often a convenient way to *build up* a matrix.
+## Julia:Comment about types
+
+Notice that [x y] converts all the data to floats, but columns of a data frame can have different types.
 """
 
-# ╔═╡ 99717c6e-f713-49d5-8ee5-a08c4a464223
-ps[2]
-
-# ╔═╡ 242ea831-c421-4a76-b658-2a57fa924a4f
+# ╔═╡ a755e58a-b16c-4d3b-a85f-81ccf374793f
 md"""
-t = $(@bind tt Slider(1:length(ps), show_value=true, default=1))
+# Reading/Writing CSV (comma separated values) Files
 """
 
-# ╔═╡ aeaef573-1e90-45f3-a7fe-31ec5e2808c4
-bar(ps[tt], ylim=(0, 1), leg=false, size=(500, 300), alpha=0.5)
-
-# ╔═╡ efe186da-3273-4767-aafc-fc8eae01dbd9
+# ╔═╡ f1e10fb7-adac-4083-8977-616a505fd591
 md"""
-### Concatenating vectors into a matrix
+  ## Writing Data to a CSV  file 
+readable by spreadsheet software.
 """
 
-# ╔═╡ 61201091-b8b3-4776-9be9-4c23d5ba88ba
+# ╔═╡ 2e42986c-2de3-49e6-9c29-a7313c0b1da8
+CSV.write("testCSVwrite.csv", data)
+
+# ╔═╡ 22758dd6-9d04-4616-ba99-1430f2dedf9a
 md"""
-Now we want to visualise this in a different way, for which we must join up (**concatenate**) all the probability vectors into a matrix:
+ ## Reading Data from a CSV file to a DataFrame
 """
 
-# ╔═╡ 66c4aed3-a04b-4a09-b954-79e816d2a3f7
-M = reduce(hcat, ps)'
+# ╔═╡ aff6a616-6d8b-4584-a6f2-195decef7774
+data_again = CSV.read("testCSVwrite.csv", DataFrame ) 
 
-# ╔═╡ b135f6be-5e82-4c72-af11-0eb0d4141dec
+# ╔═╡ 338da13a-3c26-4366-a669-ac3e24f31577
+data_again[:,"°F" ] # or data_again[:,1]
+
+# ╔═╡ 5a742546-1e4d-4aee-bed1-cb10c543e439
+data_again[:,1]
+
+# ╔═╡ 6a9c8c9a-fac7-42f7-976d-3168132cae48
 md"""
-We can visualise the matrix with a **heat map**:
+# Noisy Data
+## Add some random noise to the celsius readings
 """
 
-# ╔═╡ e74e18e3-ad08-4a53-a803-cd53564dca65
-heatmap(M, yflip=true)
-
-# ╔═╡ ed02f00f-1bcd-43fa-a56c-7be9968614cc
+# ╔═╡ 83c28c76-2eab-49f9-9999-05df85054520
 md"""
-We can also visualise this as a 3D surface:
+# The noise slider (so I can find it easily)
 """
 
-# ╔═╡ 8d453f89-4a4a-42d0-8a00-9b153a3f435e
-plotly()
-
-# ╔═╡ f7de29b5-2a51-45e4-a0a5-f7f602681303
-surface(M)
-
-# ╔═╡ 7e817bad-dc51-4c29-a4fc-f7a8bb3663ca
+# ╔═╡ ba671804-dc6d-415c-89de-9cf6294907b3
 md"""
-But this is not necessarily very clear, so let's draw it ourselves as stacked histograms:
+noise = $(@bind noise Slider(0:.5:1000, show_value = true ))
 """
 
-# ╔═╡ 403d607b-6171-431b-a058-0aad0909846f
-gr()
-
-# ╔═╡ 80e033c4-a862-443d-a198-932f5822a44e
-ylabels = [-(grid_size÷2):grid_size÷2;]
-
-# ╔═╡ c8c16c14-26b0-4f83-8135-4f862ed90686
+# ╔═╡ 3c038b68-8676-4877-9720-38da7c4e0e0e
 begin
-	plot(leg=false)
+	noisy_data = copy(data)  # Noisy DataFrame
+	noisy_data[:, "°C" ] .+= noise * randn(n)
+	yy = noisy_data[:, "°C" ]
+	noisy_data
+end
+
+# ╔═╡ e8683a71-5822-4491-9ccd-20e0fc3bf531
+md"""
+## Statistics Software Outputs Mysterious Tables
+example output from the "linear model"  (`lm`) which we store in the variable `ols` for ordinary least squares (by contrast weighted least squares treats the vertical displacements with unequally with differing weights.)
+"""
+
+# ╔═╡ 0489e5d8-51ca-4955-83e1-95ea353d9cf2
+ols = lm(@formula(°C ~ °F), noisy_data)
+
+# ╔═╡ 9a65aee4-ab8e-4ab7-be6f-cc2a2e9d5127
+noisy_data
+
+# ╔═╡ c3539f42-6ca7-47fb-9707-4d11c9e76643
+md"""
+This lecture is about explaining the meaning and significance to every part of this table.
+"""
+
+# ╔═╡ 469d809f-424f-4595-ad43-a5b2cc055304
+md"""
+# Regression a few ways 
+"""
+
+# ╔═╡ 6128b8fd-9b85-4896-a0bf-934a0733fafb
+md"""
+## The "Coef." column in the table gives the slope and intercept of the best fit line
+"""
+
+# ╔═╡ 9eb7caaa-438d-4bcb-9c54-4a0fa72c61de
+b, m = [ one.(x) x]\ yy  # The mysterious linear algebra solution using "least squares"
+
+# ╔═╡ 5a877e40-a101-4f7d-b2a1-ef4cfe5d8807
+begin
 	
-	for which in 1:15
-		for i in 1:length(ps[which])
-			plot!([which, which], [-grid_size÷2 + i, -grid_size÷2 + i], [0, ps[which][i] ], c=which, alpha=0.8, lw = 2)
-		end
+	scatter(x, yy,m=:c,mc=:red, label="noisy data", ylims=(-40, 40))
+	for i=1 : length(data[:,2])
+		plot!([x[i],x[i]], [m*x[i]+b,yy[i]], color=:gray, ls=:dash, label=false)
 	end
+	xlabel!("°F")
+	annotate!(-15,16,text("°C",11))
+	plot!(x, m.*x .+ b,  color=:blue, label="best fit line")
+	plot!(x,y,alpha=.5, color=:red, label="theory") # theoretical 
+	plot!(legend=:top)
+end
+
+# ╔═╡ 0e8fce45-f1c0-41d4-996a-d6093182afee
+function linear_regression(x,y)   # a direct computation from the data
+	n = length(x)
+	x0  = x.-mean(x)
+	y0 = y.-mean(y)
 	
-	xlims!(1, 15)
+	mᵉ = sum( x0 .* y0 ) / sum(  x0.^2 ) # slope estimate
+	bᵉ = mean(y) - mᵉ * mean(x) # intercept estimate
 	
+	s2ᵉ = sum(  (mᵉ.*x .+ bᵉ .- y).^2 ) /(n-2) # noise estimate
+	bᵉ, mᵉ, s2ᵉ
+end
+
+# ╔═╡ 71590890-38b6-440e-b61b-ece6c49ac602
+linear_regression(x,yy)
+
+# ╔═╡ f7cc7146-9ee6-4d87-b024-2a91863f4b24
+md"""
+[So why is it called "Regression" anyway?](http://blog.minitab.com/blog/statistics-and-quality-data-analysis/so-why-is-it-called-regression-anyway) Dalton's original meaning not quite what it means today.
+"""
+
+# ╔═╡ f64815e2-44b8-4585-9269-9a62655c984c
+md"""
+# Demystifying the word "Model"
+
+    Step I:  The Model is y = m*x + b + σ*randn() . 
+    This means that out there in the real world are b, m, and σ.  You
+    don't know them.  
+    
+    Step II: You do, however, have data points x and y which allow you
+    to compute an bᵉ,  mᵉ, and σᵉ.  A statistician would call these estimates
+    based on your data points. If you ran the experiment again, you would
+    get different data points.
+    
+    The computer lets us run the experiment as many times as we want just to see what happens.
+    
+        In summary, there are three kinds of variables.  The model variables b, m, and σ which are unknown.  The predictor variable x which is considered fixed and known.  The response variable y which is considered noisy.
+"""
+
+# ╔═╡ feb3c45e-88f4-4ffc-a4a0-e89489187c8d
+md"""
+## Understanding the relationship `°C ~ 1 + °F`
+"""
+
+# ╔═╡ 99069dd7-e088-4626-aa29-e48d6f9a474e
+ols
+
+# ╔═╡ 051a9e38-9a84-4ead-96fa-24c86c2b9f2d
+md"""
+`°C ~ 1 + °F` means the celsius (y) is (Coef1)*1 + (Coef2)*(°F),
+
+in general `y ~ 1 + x1 + x2 + x3` is shorthand for
+``y = c_0 + c_1 x_1 + c_2 x_2 + c_3 x_3``, etc.
+"""
+
+# ╔═╡ 2f33ee51-0725-46c2-9f1b-a61cd68abab1
+md"""
+# Simulating the real world: running many noisy models
+"""
+
+# ╔═╡ e4acd97b-22f7-4812-9898-1a485887a5f2
+function simulate(σ,howmany)
+	[linear_regression(x,y .+ σ * randn(length(x)))   for i=1:howmany]
+	# [linear_regression(x,y .+ (σ * sqrt(12)) * (-.5 .+ rand(length(x))))   for i=1:howmany]
+	# [linear_regression(x,y .+ (σ ) * ( rand([-1,1],length(x))))   for i=1:howmany]
+	
+end
+
+# ╔═╡ 4e413b40-81c4-4160-9d01-046c2d179a06
+howmany = 100_000
+
+# ╔═╡ 7b94db0d-f46b-4621-9413-1dc787ae9a39
+md"""
+## Julia: underscore as a digits separator
+"""
+
+# ╔═╡ c7455f7a-9c72-42f5-8238-1799cad96f6c
+md"""
+## Simulated intercepts ($howmany simulations)
+"""
+
+# ╔═╡ d2971801-2cdb-4b9f-8ec8-c74cbb2a0b31
+md"""
+σ = $(@bind σ Slider(0:.1:3, show_value=true, default=1))
+"""
+
+# ╔═╡ 51a28b67-ad64-4cf2-a0e6-a78fb101eb15
+s = simulate(σ, howmany)
+
+# ╔═╡ d451af49-3139-4329-a885-a210b1760f74
+s[1] # first simulation,  intercept, slope, estimation of noise σ
+
+# ╔═╡ e1e8c140-bc4e-400d-beb2-0986e071c3a3
+begin	
+	histogram( first.(s) , alpha=.6, bins=100, norm=true)
+	vline!([-17.777777],color=:white)
+	title!("intercept")
+	xlims!(-17.7777-3,-17.7777+3)
+	ylims!(0,1)
+	plot!(legend=false)
+	
+end
+
+# ╔═╡ 1429be09-a31f-415f-9c3d-f32b085ef68d
+md"""
+Experimental mean of the intercept
+"""
+
+# ╔═╡ da321202-0dc5-44ad-aac0-f3ea0d229243
+mean(first.(s)), -17.777777
+
+# ╔═╡ 2aceb366-a067-4271-9362-c320f4735ed1
+md"""
+Experimental std of the intercept
+"""
+
+# ╔═╡ 58f548fd-f6d0-479d-8469-bc886783f9a7
+std( first.(s))
+
+# ╔═╡ 07be9435-bc07-4a18-aad8-3ff19f5bcce4
+md"""
+Statisticians know an exact formula for the theoretical std of the intercept
+"""
+
+# ╔═╡ 1a6ad08d-c3bb-47e7-bdee-156bbff3aeda
+sb = σ * norm(x)  / norm(x.-mean(x)) / sqrt(n)        
+
+# ╔═╡ c55e4894-db71-4729-a1a1-5f68b45e3bf5
+md"""
+## Simulated slopes ($howmany simulations)
+"""
+
+# ╔═╡ f50d66eb-0357-4017-ac9b-99e63cd52dc0
+begin
+	histogram( getindex.(s, 2), alpha=.6, bins=100, norm=true, legend=false )
+	title!("slope")
+	vline!([5/9],color=:white)
+	xlims!(5/9-.1, 5/9+.1)
+	ylims!(0,100)
+end
+
+# ╔═╡ 5c7a7361-f0e7-473a-9e38-226828aa00ca
+md"""
+Sample mean of the slope
+"""
+
+# ╔═╡ acf0e90e-8f1f-451f-9f0f-70a0bcc7efca
+mean(getindex.(s, 2)), .555555
+
+# ╔═╡ c9f65e15-f222-4a88-98c2-9e1d8b5ec3eb
+md"""
+Sample std of the slope.
+"""
+
+# ╔═╡ 2589a369-8b21-406d-906d-71b18e4c7895
+std( getindex.(s, 2))
+
+# ╔═╡ ed6a0e6a-2d0c-4f77-9b08-1a5b5d56dd34
+md"""
+Statisticians know a formula for the theoretical std of the slope.
+"""
+
+# ╔═╡ 61d1c1f7-e070-413b-8a92-76f44d237206
+ σ  / norm(x.-mean(x))
+
+# ╔═╡ 94d80ad6-0403-4322-aa9f-647c291c19d7
+md"""
+## Simulated σ ($howmany simulations)
+"""
+
+# ╔═╡ ce89b805-39a2-49e6-8781-c557aa73ed27
+begin	
+	histogram( last.(s) ./ (σ^2/(n-2)) , alpha=.6, bins=100, norm=true, legend=false)
+	vline!([1],color=:white)
+	title!("residual")
+	vline!([n-2],color=:white, lw=4)
+	# xlims!(0,20)
+	# ylims!(0,.13)
+	plot!( x-> pdf(Chisq(n-2),x) , lw=4 , color=:red )
 	plot!()
 end
 
-# ╔═╡ 29612df6-203f-42bc-b53b-86af618d60ec
-let
-	color_list = [:red, RGB(0, 1, 0.1), :blue]
-	xs = []
-	ys = []
-	zs = []
-	cs = []
-	cs2 = []
-	
-	for which in 1:15
-		for i in 1:length(ps[which])
-			push!(xs, which, which, NaN)
-			push!(ys, ylabels[i], ylabels[i], NaN)
-			push!(zs, 0, ps[which][i], NaN)
-			# push!(zs, 0, 1, NaN)D
-			push!(cs, color_list[mod1(which, 3)], color_list[mod1(which, 3)], color_list[mod1(which, 3)])
-		end
-		push!(cs2, which)
-	end
-				# plot(xs, ys, zs)
-	
-	plot(leg=false)
-	
-	plot!(1:15, [0; cumsum(sign.(randn(14)))], zeros(15), alpha=0.6, m=:o, lw=2, c=color_list)
-	plot!(xs, ys, zs, c=cs, xlims=(1, 15), ylims=(-30, 30), zlims=(0, 1), lw=2.5, alpha=0.7, xticks=(1:15), yticks=(-20:10:20))
-	
-	xlabel!("t")
-	ylabel!("space")
+# ╔═╡ 75f9b5e9-775d-4767-9da6-222f977da686
+mean( last.(s)  )
 
+# ╔═╡ 797c9f2f-0b85-4435-b1c0-edc8cf67f738
+σ^2
+
+# ╔═╡ 6e0b2452-9f8b-4730-8072-a663704893c5
+std(last.(s))
+
+# ╔═╡ bf537a3a-b7c6-4c64-8b44-85511c3d492e
+ (σ^2/ sqrt((n-2)/2))
+
+# ╔═╡ 1340818c-3391-420b-aa94-acaea8a47d7d
+md"""
+# The Linear Model Table
+"""
+
+# ╔═╡ 829607ff-25e0-4585-9c5c-d132ecb86cc8
+ols # = lm(@formula(°C ~ °F), noisy_data)
+
+# ╔═╡ 3fc0a4a8-6719-4920-99c7-bd576225214e
+-24.3784  / 19.0397
+
+# ╔═╡ 24a7ad28-936c-47dc-bc53-d1ddbf39d05d
+0.686156 / 0.330459
+
+# ╔═╡ 9233dc6a-7578-4d72-b0c2-c3bb110a9fbe
+md"""
+## The Coef column is just the regression formula for the best line
+"""
+
+# ╔═╡ 07e02bb6-380d-40dd-86ad-19d713cd1657
+mᵉ, bᵉ, σ²ᵉ =  linear_regression(x, yy)
+
+# ╔═╡ b14593ba-cb8c-4f28-8fb0-2d2df479357b
+md"""
+## The Std. error column
+"""
+
+# ╔═╡ ac204681-b9df-471b-a22e-9d8f68679151
+md"""
+Above we saw that statisticians had formulas for the exact std of the slope and intercept:
+
+ `std(intercept) = σ * norm(x)  / norm(x.-mean(x)) / sqrt(n)`
+
+` std(slope) =  σ  / norm(x.-mean(x))`
+"""
+
+# ╔═╡ 08f43fff-fbd8-468f-8b3b-efd1829f4fc0
+md"""
+Let's replace σ with our estimate √σ²ᵉ
+"""
+
+# ╔═╡ 43ec6124-c3e5-4f34-b0d9-1a0b069aa3e0
+sqrt(σ²ᵉ) * norm(x) / norm(x.-mean(x)) / sqrt(n)
+
+# ╔═╡ 3fe71215-bbf2-40e9-bcfc-0bc9b3ac94c8
+sqrt(σ²ᵉ) / norm(x.-mean(x))
+
+# ╔═╡ a2b27841-256e-4898-aeca-04c4f44138fb
+md"""
+See those are the numbers in the magic table above.  I always love when I can reproduce the numbers myself.  It makes me feel I understand it.
+"""
+
+# ╔═╡ 8851dca3-e1a6-46b2-9745-f175ef0b0fae
+md"""
+## The t column
+"""
+
+# ╔═╡ ccfcb4d9-5a88-48fb-9568-1147a74f6eec
+md"""
+The t column, is simply the Coeff column divided by the Std. error column which we will use in a hypothesis test in the upcoming column.
+"""
+
+# ╔═╡ 13858c0a-3e7a-4742-a821-97dd9a45109d
+md"""
+### The t-distribution
+"""
+
+# ╔═╡ b2c3c1e5-e569-4c6f-bad9-055a25d73dce
+md"""
+In a statistics class you will likely see a random variable known as a t-distribution.
+(with parameter k). It is the ratio of a standard normal to a χ distribution with parameter k. Let's just use `randn` to simulate. For the data sets of most of today's experiments, the normal distribution is close enough to t, that nobody needs to even use t much anymore.  In any event, with a t or a normal we are using this distribution because we are cognizant of the fact that the true σ is unknown and is merely being estimated.
+"""
+
+# ╔═╡ 305e4dfc-af7d-4667-8da8-a7ba5fd20fa6
+rand_t(k) = sqrt(k)* randn() / norm( randn(k))
+
+# ╔═╡ a648ba4f-fec4-4fa7-b328-1b52070224eb
+md"""
+k = $(@bind k Slider(3:100, show_value=true))
+"""
+
+# ╔═╡ d652df7d-7364-4da4-b51e-9fc88b978cda
+begin
+
+	histogram([rand_t(k) for i=1:100000], norm=true, bins=500, label=false)
+	plot!( x-> pdf(TDist(k),x) , lw=4 , color=:red, label="t dist" )
+	plot!( x->pdf(Normal(),x), color=:green, lw=2, label="normal dist")
+	xlims!(-3, 3)
+	ylims!(0, .4)
 end
+
+# ╔═╡ 2e530106-57a8-46a9-8f99-49a871d43255
+md"""
+## The Pr(>|t|)  column 
+is the area of the curve outside of the interval [-t,t].
+"""
+
+# ╔═╡ a990b133-ce50-4edf-81e1-1e78aeff8cd6
+md"""
+In statistics we ask if the coefficient ought to be considered 0 (which means in this case the data has no intercept or does not depend on x) or whether the coefficients are signficant with some probability.  The Pr(>|t|) column gives us the probablity that we should accept the hypothesis that the coefficients might reasonably be just 0.
+
+In a proper statistical test, you should decide at what level you might be willing to accept the hypothesis, example .99, .95, or .9  might be a reasonable level, and if the test gives a smaller probability, you will accept that the coefficients are signficant.  It is not proper to produce the able and then decide whether to use .99, say.
+"""
+
+# ╔═╡ 3d0ea801-d66b-4e4e-90da-3a7dce28140d
+md"""
+# Degrees of Freedom
+"""
+
+# ╔═╡ 6fb223bb-f193-414d-9144-df180d09bea1
+md"""
+It is interesting to see that the sum of squares of a demeaned Gaussian vector is the size -1.  This is the reason for the (n-1) in the sample mean for variance.
+"""
+
+# ╔═╡ fb495ba4-52e6-4e0d-bd9c-981700edfebc
+md"""
+How many degrees of freedom are in a "demeaned" vector of normals?
+"""
+
+# ╔═╡ cdc4b25d-d05f-40c8-9c79-265876f01523
+   
+mean([ (v = randn(17);v.-=mean(v);sum(v.^2)) for i=1:1_000_000])
+
+# ╔═╡ 967c5e3e-ab4c-45de-953c-aff6d16229af
+md"""
+If you ever wondered why the sample variance always has you dividing by (n-1)
+and not n, this is the crux of the reason.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
+CSV = "~0.10.4"
+DataFrames = "~1.3.4"
+Distributions = "~0.25.58"
+GLM = "~1.7.0"
 Plots = "~1.29.0"
 PlutoUI = "~0.7.38"
 """
@@ -543,6 +622,12 @@ git-tree-sha1 = "19a35467a82e236ff51bc17a3a44b69ef35185a2"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
 version = "1.0.8+0"
 
+[[CSV]]
+deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "SentinelArrays", "Tables", "Unicode", "WeakRefStrings"]
+git-tree-sha1 = "873fb188a4b9d76549b81465b1f75c82aaf59238"
+uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+version = "0.10.4"
+
 [[Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
@@ -560,6 +645,12 @@ deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
 git-tree-sha1 = "1e315e3f4b0b7ce40feded39c73049692126cf53"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.3"
+
+[[CodecZlib]]
+deps = ["TranscodingStreams", "Zlib_jll"]
+git-tree-sha1 = "ded953804d019afa9a3f98981d99b33e3db7b6da"
+uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
+version = "0.7.0"
 
 [[ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Random"]
@@ -601,10 +692,21 @@ git-tree-sha1 = "9f02045d934dc030edad45944ea80dbd1f0ebea7"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
 version = "0.5.7"
 
+[[Crayons]]
+git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
+uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+version = "4.1.1"
+
 [[DataAPI]]
 git-tree-sha1 = "fb5f5316dd3fd4c5e7c30a24d50643b73e37cd40"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.10.0"
+
+[[DataFrames]]
+deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Reexport", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "daa21eb85147f72e41f6352a57fccea377e310a9"
+uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+version = "1.3.4"
 
 [[DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -625,9 +727,21 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
+[[DensityInterface]]
+deps = ["InverseFunctions", "Test"]
+git-tree-sha1 = "80c3e8639e3353e5d2912fb3a1916b8455e2494b"
+uuid = "b429d917-457f-4dbc-8f4c-0cc954292b1d"
+version = "0.4.0"
+
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+
+[[Distributions]]
+deps = ["ChainRulesCore", "DensityInterface", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
+git-tree-sha1 = "8a6b49396a4058771c5c072239b2e0a76e2e898c"
+uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
+version = "0.25.58"
 
 [[DocStringExtensions]]
 deps = ["LibGit2"]
@@ -663,6 +777,18 @@ git-tree-sha1 = "d8a578692e3077ac998b50c0217dfd67f21d1e5f"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.0+0"
 
+[[FilePathsBase]]
+deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
+git-tree-sha1 = "129b104185df66e408edd6625d480b7f9e9823a0"
+uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
+version = "0.9.18"
+
+[[FillArrays]]
+deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
+git-tree-sha1 = "246621d23d1f43e3b9c368bf3b72b2331a27c286"
+uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
+version = "0.13.2"
+
 [[FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
@@ -693,11 +819,21 @@ git-tree-sha1 = "aa31987c2ba8704e23c6c8ba8a4f769d5d7e4f91"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.10+0"
 
+[[Future]]
+deps = ["Random"]
+uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+
 [[GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
 git-tree-sha1 = "51d2dfe8e590fbd74e7a842cf6d13d8a2f45dc01"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.3.6+0"
+
+[[GLM]]
+deps = ["Distributions", "LinearAlgebra", "Printf", "Reexport", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "StatsModels"]
+git-tree-sha1 = "92b8d38886445d6d06e5f13201e57d018c4ff880"
+uuid = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
+version = "1.7.0"
 
 [[GR]]
 deps = ["Base64", "DelimitedFiles", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Printf", "Random", "RelocatableFolders", "Serialization", "Sockets", "Test", "UUIDs"]
@@ -775,6 +911,12 @@ git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
 uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
 version = "0.5.1"
 
+[[InlineStrings]]
+deps = ["Parsers"]
+git-tree-sha1 = "61feba885fac3a407465726d0c330b3055df897f"
+uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
+version = "1.1.2"
+
 [[InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -784,6 +926,11 @@ deps = ["Test"]
 git-tree-sha1 = "336cc738f03e069ef2cac55a104eb823455dca75"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.4"
+
+[[InvertedIndices]]
+git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
+uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
+version = "1.1.0"
 
 [[IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
@@ -1015,6 +1162,12 @@ git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
 uuid = "2f80f16e-611a-54ab-bc61-aa92de5b98fc"
 version = "8.44.0+0"
 
+[[PDMats]]
+deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "027185efff6be268abbaf30cfd53ca9b59e3c857"
+uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
+version = "0.11.10"
+
 [[Parsers]]
 deps = ["Dates"]
 git-tree-sha1 = "1285416549ccfcdf0c50d4997a94331e88d68413"
@@ -1055,11 +1208,23 @@ git-tree-sha1 = "670e559e5c8e191ded66fa9ea89c97f10376bb4c"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.38"
 
+[[PooledArrays]]
+deps = ["DataAPI", "Future"]
+git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
+uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
+version = "1.4.2"
+
 [[Preferences]]
 deps = ["TOML"]
 git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.3.0"
+
+[[PrettyTables]]
+deps = ["Crayons", "Formatting", "Markdown", "Reexport", "Tables"]
+git-tree-sha1 = "dfb54c4e414caa595a1f2ed759b160f5a3ddcba5"
+uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
+version = "1.3.1"
 
 [[Printf]]
 deps = ["Unicode"]
@@ -1070,6 +1235,12 @@ deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll
 git-tree-sha1 = "c6c0f690d0cc7caddb74cef7aa847b824a16b256"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
 version = "5.15.3+1"
+
+[[QuadGK]]
+deps = ["DataStructures", "LinearAlgebra"]
+git-tree-sha1 = "78aadffb3efd2155af139781b8a8df1ef279ea39"
+uuid = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
+version = "2.4.2"
 
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1107,6 +1278,18 @@ git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
 
+[[Rmath]]
+deps = ["Random", "Rmath_jll"]
+git-tree-sha1 = "bf3188feca147ce108c76ad82c2792c57abe7b1f"
+uuid = "79098fc4-a85e-5d69-aa6a-4863f24498fa"
+version = "0.7.0"
+
+[[Rmath_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "68db32dff12bb6127bac73c209881191bf0efbb7"
+uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
+version = "0.3.0+0"
+
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
@@ -1116,12 +1299,23 @@ git-tree-sha1 = "0b4b7f1393cff97c33891da2a0bf69c6ed241fda"
 uuid = "6c6a2e73-6563-6170-7368-637461726353"
 version = "1.1.0"
 
+[[SentinelArrays]]
+deps = ["Dates", "Random"]
+git-tree-sha1 = "6a2f7d70512d205ca8c7ee31bfa9f142fe74310c"
+uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
+version = "1.3.12"
+
 [[Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+
+[[ShiftedArrays]]
+git-tree-sha1 = "22395afdcf37d6709a5a0766cc4a5ca52cb85ea0"
+uuid = "1277b4bf-5013-50f5-be3d-901d8477a67a"
+version = "1.0.0"
 
 [[Showoff]]
 deps = ["Dates", "Grisu"]
@@ -1170,11 +1364,27 @@ git-tree-sha1 = "8977b17906b0a1cc74ab2e3a05faa16cf08a8291"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.33.16"
 
+[[StatsFuns]]
+deps = ["ChainRulesCore", "InverseFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
+git-tree-sha1 = "5950925ff997ed6fb3e985dcce8eb1ba42a0bbe7"
+uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+version = "0.9.18"
+
+[[StatsModels]]
+deps = ["DataAPI", "DataStructures", "LinearAlgebra", "Printf", "REPL", "ShiftedArrays", "SparseArrays", "StatsBase", "StatsFuns", "Tables"]
+git-tree-sha1 = "4352d5badd1bc8bf0a8c825e886fa1eda4f0f967"
+uuid = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
+version = "0.6.30"
+
 [[StructArrays]]
 deps = ["Adapt", "DataAPI", "StaticArrays", "Tables"]
 git-tree-sha1 = "e75d82493681dfd884a357952bbd7ab0608e1dc3"
 uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 version = "0.6.7"
+
+[[SuiteSparse]]
+deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
+uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[TOML]]
 deps = ["Dates"]
@@ -1205,6 +1415,12 @@ version = "0.1.1"
 [[Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[TranscodingStreams]]
+deps = ["Random", "Test"]
+git-tree-sha1 = "216b95ea110b5972db65aa90f88d8d89dcb8851c"
+uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+version = "0.9.6"
 
 [[Tricks]]
 git-tree-sha1 = "6bac775f2d42a611cdfcd1fb217ee719630c4175"
@@ -1245,6 +1461,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "4528479aa01ee1b3b4cd0e6faef0e04cf16466da"
 uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
 version = "1.25.0+0"
+
+[[WeakRefStrings]]
+deps = ["DataAPI", "InlineStrings", "Parsers"]
+git-tree-sha1 = "b1be2855ed9ed8eac54e5caff2afcdb442d52c23"
+uuid = "ea10d353-3f73-51f8-a26c-33c1cb351aa5"
+version = "1.4.2"
 
 [[XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
@@ -1450,78 +1672,104 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╟─e46441c4-97bd-11eb-330c-97bd5ac41f9e
-# ╠═85b45a43-d7bf-4597-a1a6-329b41dce20d
-# ╠═85c26eb4-c258-4a8b-9415-7b5f7ddff02a
-# ╟─2d48bfc6-9617-11eb-3a85-279bebd21332
-# ╟─30162386-039f-4cd7-9121-a3382be3c294
-# ╟─4e7b163e-dfd0-457e-b1f3-8807a4d8060a
-# ╠═e8ceab7b-45db-4393-bb8e-e000ecf78d2c
-# ╠═2d4dffb9-39e4-48de-9688-980b96814c9f
-# ╟─8ff66523-bc2e-4c53-975b-8ba4f99eb1c6
-# ╟─2868dd57-7164-4162-8c5d-30628dedeb7a
-# ╠═f6009473-d3c1-444f-88ae-814f770e811b
-# ╟─9a368602-acd3-43fb-9dff-e407a4bab930
-# ╟─67517333-175f-48c4-a915-76658cbf1304
-# ╠═d6832372-d336-4a54-bbcf-d0bb70e4de64
-# ╟─35f14826-f1e4-4977-a31a-0f6148fe25ad
-# ╠═7468fc5d-7f35-45e2-b5fc-7e63b562bc8f
-# ╠═1ca8aa3b-b05d-40f6-a925-2f0248b79ca2
-# ╟─38d88b7c-3b4f-430b-8d3c-f672ab0c7a49
-# ╟─f4c9b02b-738b-4de1-9e9d-05b1616bee0b
-# ╟─d1c47afa-ab7f-4543-a161-e3ceb6f11eb4
-# ╠═bf78e00f-05d9-4a05-8512-4924ef9e25f7
-# ╟─b948830f-ead1-4f36-a237-c998f2f7deb8
-# ╠═15223c51-8d31-4a50-a8ff-1cb7d35de454
-# ╟─0bd45c4a-3286-427a-a927-15869be2ebfe
-# ╠═999fb608-fb1a-46cb-82ca-f3f31fe617e1
-# ╟─6509e69a-6e50-4816-a98f-67ba437383fb
-# ╟─e58976a9-1784-441e-bb76-3011538b8ad0
-# ╟─1efc2b68-9313-424f-9850-eb4496cc8486
-# ╟─6e93ffda-217b-4d46-86b5-534ddc1bae90
-# ╟─396d2490-3cb9-4f68-8fdf-9209d2010e02
-# ╟─dc1c22e8-1c7b-43b7-8421-c2ca708931a5
-# ╟─e7a52b56-322c-4478-a670-dec1013c9bd8
-# ╟─5f136388-5573-4814-a088-a66278acdbbe
-# ╟─e440dc3b-bafd-4e0c-9fe8-13fce8eea22d
-# ╟─89d3e90d-3685-473d-aea4-0b7c5b80d7f7
-# ╟─203eea14-1c68-4a9f-ab18-9a2e5f408a79
-# ╠═b6d4b045-a39f-4236-ace2-9f631e853d1b
-# ╟─e61b56be-d334-4c8f-aa8e-887bb27c058c
-# ╠═782f0b9a-3793-4abb-826b-9e14d6eae690
-# ╟─1764b56a-f297-4a4e-a931-31aa987ec785
-# ╠═8082092b-b6bf-4619-8776-39fdd6c9b7c1
-# ╠═34c0b850-5e95-4eb9-8435-3aae8d124772
-# ╟─4115f7cb-d45f-4cc2-86bf-316c074393f8
-# ╟─6bc2f20d-3d09-425b-a471-44090dc3161e
-# ╟─98994cb9-45dc-48aa-b62d-2407f7184bee
-# ╟─f11f8d7d-cd3f-4585-aab4-083b892c6d4c
-# ╠═fb804fe2-58be-46c9-9200-ceb8863d052c
-# ╟─40e457b4-616c-4fab-9c8e-2e5063129597
-# ╟─979c1fbd-c9f6-4e8b-a648-6a0210fc9e7f
-# ╟─583e3a92-01e7-4b88-9be0-f1e3b3c95005
-# ╠═0b26efab-4e93-4d53-9c4d-faea68d12174
-# ╟─b9ce5af1-84f7-4a2d-92c9-de2c5498a88d
-# ╠═b48e55b7-4b56-41aa-9796-674d04adf5df
-# ╟─53a36c1a-0b8c-4099-8854-08d73c9f118e
-# ╠═6b298184-32c6-412d-a900-b113d6bd3d53
-# ╠═b84a7255-7b0a-4ba1-8c87-9f5d3fa32ef3
-# ╟─c430c4de-d9bf-44e1-aa40-6b823d718b04
-# ╠═99717c6e-f713-49d5-8ee5-a08c4a464223
-# ╟─242ea831-c421-4a76-b658-2a57fa924a4f
-# ╠═aeaef573-1e90-45f3-a7fe-31ec5e2808c4
-# ╟─efe186da-3273-4767-aafc-fc8eae01dbd9
-# ╟─61201091-b8b3-4776-9be9-4c23d5ba88ba
-# ╠═66c4aed3-a04b-4a09-b954-79e816d2a3f7
-# ╟─b135f6be-5e82-4c72-af11-0eb0d4141dec
-# ╠═e74e18e3-ad08-4a53-a803-cd53564dca65
-# ╟─ed02f00f-1bcd-43fa-a56c-7be9968614cc
-# ╠═8d453f89-4a4a-42d0-8a00-9b153a3f435e
-# ╠═f7de29b5-2a51-45e4-a0a5-f7f602681303
-# ╟─7e817bad-dc51-4c29-a4fc-f7a8bb3663ca
-# ╠═403d607b-6171-431b-a058-0aad0909846f
-# ╠═80e033c4-a862-443d-a198-932f5822a44e
-# ╟─c8c16c14-26b0-4f83-8135-4f862ed90686
-# ╠═29612df6-203f-42bc-b53b-86af618d60ec
+# ╟─4ea0ccfa-9622-11eb-1cf0-e9ae2f927dd2
+# ╠═d155ea12-9628-11eb-347f-7754a33fd403
+# ╠═01506de2-918a-11eb-2a4d-c554a6e54631
+# ╟─877deb2c-702b-457b-a54b-f27c277928d4
+# ╟─36ce167f-382c-4b9a-be34-83250b10c4e5
+# ╟─83912943-a847-420a-bfdb-450027b631e8
+# ╠═280d112f-d34a-4cc4-9e3a-4ebbfcd5eb51
+# ╠═b5031c96-db57-4baf-b271-6bb12e29de9b
+# ╠═c2f77e8f-a8c0-4144-a8b4-b25dd98ed234
+# ╟─ad161b98-f4a1-42ac-ad4f-8b71fabcfde9
+# ╠═8e422886-74ef-4c0f-be1e-fda238c8db44
+# ╟─ca21122a-2522-482a-b7ef-bd73e96cb5a9
+# ╟─41e05b1e-8b5e-45e3-91bb-01355ade9f3d
+# ╠═9d2e3861-ca36-406e-952d-831ca3947e44
+# ╟─e73854ed-3581-41c4-ada5-e48242033759
+# ╠═9873d944-b611-46f9-82a7-0cf714a3078c
+# ╠═2be44753-afee-4125-b6bc-8866d2293dc2
+# ╟─6e07e8fb-fe51-4b37-bfb2-d1466e768754
+# ╟─a755e58a-b16c-4d3b-a85f-81ccf374793f
+# ╟─f1e10fb7-adac-4083-8977-616a505fd591
+# ╠═2e42986c-2de3-49e6-9c29-a7313c0b1da8
+# ╟─22758dd6-9d04-4616-ba99-1430f2dedf9a
+# ╠═aff6a616-6d8b-4584-a6f2-195decef7774
+# ╠═338da13a-3c26-4366-a669-ac3e24f31577
+# ╠═5a742546-1e4d-4aee-bed1-cb10c543e439
+# ╟─6a9c8c9a-fac7-42f7-976d-3168132cae48
+# ╟─3c038b68-8676-4877-9720-38da7c4e0e0e
+# ╟─5a877e40-a101-4f7d-b2a1-ef4cfe5d8807
+# ╟─83c28c76-2eab-49f9-9999-05df85054520
+# ╟─ba671804-dc6d-415c-89de-9cf6294907b3
+# ╟─e8683a71-5822-4491-9ccd-20e0fc3bf531
+# ╠═0489e5d8-51ca-4955-83e1-95ea353d9cf2
+# ╠═9a65aee4-ab8e-4ab7-be6f-cc2a2e9d5127
+# ╟─c3539f42-6ca7-47fb-9707-4d11c9e76643
+# ╟─469d809f-424f-4595-ad43-a5b2cc055304
+# ╟─6128b8fd-9b85-4896-a0bf-934a0733fafb
+# ╠═9eb7caaa-438d-4bcb-9c54-4a0fa72c61de
+# ╠═0e8fce45-f1c0-41d4-996a-d6093182afee
+# ╠═71590890-38b6-440e-b61b-ece6c49ac602
+# ╟─f7cc7146-9ee6-4d87-b024-2a91863f4b24
+# ╟─f64815e2-44b8-4585-9269-9a62655c984c
+# ╟─feb3c45e-88f4-4ffc-a4a0-e89489187c8d
+# ╠═99069dd7-e088-4626-aa29-e48d6f9a474e
+# ╟─051a9e38-9a84-4ead-96fa-24c86c2b9f2d
+# ╟─2f33ee51-0725-46c2-9f1b-a61cd68abab1
+# ╠═e4acd97b-22f7-4812-9898-1a485887a5f2
+# ╠═4e413b40-81c4-4160-9d01-046c2d179a06
+# ╟─7b94db0d-f46b-4621-9413-1dc787ae9a39
+# ╠═51a28b67-ad64-4cf2-a0e6-a78fb101eb15
+# ╠═d451af49-3139-4329-a885-a210b1760f74
+# ╟─c7455f7a-9c72-42f5-8238-1799cad96f6c
+# ╟─d2971801-2cdb-4b9f-8ec8-c74cbb2a0b31
+# ╠═e1e8c140-bc4e-400d-beb2-0986e071c3a3
+# ╟─1429be09-a31f-415f-9c3d-f32b085ef68d
+# ╠═da321202-0dc5-44ad-aac0-f3ea0d229243
+# ╟─2aceb366-a067-4271-9362-c320f4735ed1
+# ╠═58f548fd-f6d0-479d-8469-bc886783f9a7
+# ╟─07be9435-bc07-4a18-aad8-3ff19f5bcce4
+# ╠═1a6ad08d-c3bb-47e7-bdee-156bbff3aeda
+# ╟─c55e4894-db71-4729-a1a1-5f68b45e3bf5
+# ╠═f50d66eb-0357-4017-ac9b-99e63cd52dc0
+# ╟─5c7a7361-f0e7-473a-9e38-226828aa00ca
+# ╠═acf0e90e-8f1f-451f-9f0f-70a0bcc7efca
+# ╟─c9f65e15-f222-4a88-98c2-9e1d8b5ec3eb
+# ╠═2589a369-8b21-406d-906d-71b18e4c7895
+# ╟─ed6a0e6a-2d0c-4f77-9b08-1a5b5d56dd34
+# ╠═61d1c1f7-e070-413b-8a92-76f44d237206
+# ╟─94d80ad6-0403-4322-aa9f-647c291c19d7
+# ╠═ce89b805-39a2-49e6-8781-c557aa73ed27
+# ╠═75f9b5e9-775d-4767-9da6-222f977da686
+# ╠═797c9f2f-0b85-4435-b1c0-edc8cf67f738
+# ╠═6e0b2452-9f8b-4730-8072-a663704893c5
+# ╠═bf537a3a-b7c6-4c64-8b44-85511c3d492e
+# ╟─1340818c-3391-420b-aa94-acaea8a47d7d
+# ╠═829607ff-25e0-4585-9c5c-d132ecb86cc8
+# ╠═3fc0a4a8-6719-4920-99c7-bd576225214e
+# ╠═24a7ad28-936c-47dc-bc53-d1ddbf39d05d
+# ╟─9233dc6a-7578-4d72-b0c2-c3bb110a9fbe
+# ╠═07e02bb6-380d-40dd-86ad-19d713cd1657
+# ╟─b14593ba-cb8c-4f28-8fb0-2d2df479357b
+# ╟─ac204681-b9df-471b-a22e-9d8f68679151
+# ╟─08f43fff-fbd8-468f-8b3b-efd1829f4fc0
+# ╠═43ec6124-c3e5-4f34-b0d9-1a0b069aa3e0
+# ╠═3fe71215-bbf2-40e9-bcfc-0bc9b3ac94c8
+# ╟─a2b27841-256e-4898-aeca-04c4f44138fb
+# ╟─8851dca3-e1a6-46b2-9745-f175ef0b0fae
+# ╟─ccfcb4d9-5a88-48fb-9568-1147a74f6eec
+# ╟─13858c0a-3e7a-4742-a821-97dd9a45109d
+# ╟─b2c3c1e5-e569-4c6f-bad9-055a25d73dce
+# ╠═305e4dfc-af7d-4667-8da8-a7ba5fd20fa6
+# ╟─a648ba4f-fec4-4fa7-b328-1b52070224eb
+# ╠═d652df7d-7364-4da4-b51e-9fc88b978cda
+# ╟─2e530106-57a8-46a9-8f99-49a871d43255
+# ╟─a990b133-ce50-4edf-81e1-1e78aeff8cd6
+# ╟─3d0ea801-d66b-4e4e-90da-3a7dce28140d
+# ╟─6fb223bb-f193-414d-9144-df180d09bea1
+# ╟─fb495ba4-52e6-4e0d-bd9c-981700edfebc
+# ╠═cdc4b25d-d05f-40c8-9c79-265876f01523
+# ╟─967c5e3e-ab4c-45de-953c-aff6d16229af
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
