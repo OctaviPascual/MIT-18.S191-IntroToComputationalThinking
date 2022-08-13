@@ -76,6 +76,9 @@ md"""
 # Julia concepts
 
 - Named tuples
+- Functions of functions: when you run an optimization, you have a function and you try to put something around it
+- Optim package: entirely written in Julia
+- JuMP: Julia for Mathematical Programming (popular modelling language)
 """
 
 # ╔═╡ dccbd53d-33ed-4d37-9d2c-da76e090d5dd
@@ -329,10 +332,11 @@ end
 
 # ╔═╡ 4c285bc2-b3c2-4d20-a904-ecaa07795342
 md"""
-Hoping for
-	
-`(b=-18.1716, m=0.56601)`
+Hoping for:
 """
+
+# ╔═╡ a148e17a-1bc6-4b8b-b060-0b5dce387e6e
+b, m
 
 # ╔═╡ 592397eb-ec52-423b-925b-d8becb9eac8e
 md"""
@@ -1553,6 +1557,7 @@ version = "0.9.1+5"
 # ╟─c9417d90-a9cb-4655-a258-8a8898e5576a
 # ╠═6535280a-e0ce-4e13-86dd-165d5f06cfe7
 # ╟─4c285bc2-b3c2-4d20-a904-ecaa07795342
+# ╠═a148e17a-1bc6-4b8b-b060-0b5dce387e6e
 # ╟─592397eb-ec52-423b-925b-d8becb9eac8e
 # ╠═7086950b-c8db-49d4-b095-15be91c73b56
 # ╟─327514f1-8081-4a6c-8be4-8ffd52ed3c46
