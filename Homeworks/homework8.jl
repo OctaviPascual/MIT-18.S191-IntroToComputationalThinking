@@ -104,8 +104,7 @@ md"""
 
 # ╔═╡ d217a4b6-12e8-11eb-29ce-53ae143a39cd
 function finite_difference_slope(f::Function, a, h=1e-3)
-	
-	return missing
+	return (f(a+h) - f(a)) / h
 end
 
 # ╔═╡ f0576e48-1261-11eb-0579-0b1372565ca7
@@ -118,8 +117,7 @@ md"""
 
 # ╔═╡ cbf0a27a-12e8-11eb-379d-85550b942ceb
 function tangent_line(f, a, h)
-	
-	return missing
+	return x -> finite_difference_slope(f, a, h) * (x-a) + f(a)
 end
 
 # ╔═╡ 2b79b698-10b9-11eb-3bde-53fc1c48d5f7
@@ -138,6 +136,11 @@ Notice that, as you decrease ``h``, the tangent line gets more accurate, but wha
 
 # ╔═╡ 7495af52-10ba-11eb-245f-a98781ba123c
 h_finite_diff = 10.0^log_h
+
+# ╔═╡ 80c5aa41-a907-4319-80e8-78c7228ea629
+md"""
+When $h$ is too small, the tangent is a horizontal line, hence the slope is 0
+"""
 
 # ╔═╡ 327de976-10b9-11eb-1916-69ad75fc8dc4
 zeroten = LinRange(0.0, 10.0, 300);
@@ -216,8 +219,7 @@ Using this formula, we only need to know the _value_ ``f(a)`` and the _slope_ ``
 # ╔═╡ fa320028-12c4-11eb-0156-773e2aba8e58
 function euler_integrate_step(fprime::Function, fa::Number, 
 		a::Number, h::Number)
-	
-	return missing
+	return h*fprime(a) + fa
 end
 
 # ╔═╡ 2335cae6-112f-11eb-3c2c-254e82014567
@@ -228,11 +230,16 @@ md"""
 # ╔═╡ fff7754c-12c4-11eb-2521-052af1946b66
 function euler_integrate(fprime::Function, fa::Number, 
 		T::AbstractRange)
-	
+
 	a0 = T[1]
 	h = step(T)
+	result = [a0]
+
+	for i in 2:length(T)
+		push!(result, euler_integrate_step(fprime, result[i-1], a0 + i*h, h))
+	end
 	
-	return missing
+	return result
 end
 
 # ╔═╡ 4d0efa66-12c6-11eb-2027-53d34c68d5b0
@@ -250,10 +257,10 @@ euler_test = let
 	euler_integrate(fprime, 0, T)
 end
 
-# ╔═╡ ab72fdbe-10be-11eb-3b33-eb4ab41730d6
+# ╔═╡ 2ce07b73-992f-40b0-aa93-080e8b189c63
 @bind N_euler Slider(2:40)
 
-# ╔═╡ 990236e0-10be-11eb-333a-d3080a224d34
+# ╔═╡ 3a56a1e9-6cdb-4fa8-8b1b-1f071adb1387
 let
 	a = 1
 	h = .3
@@ -329,11 +336,11 @@ r(t+h) &= r(t) + h\,\cdot \gamma i(t)
 # ╔═╡ 1e5ca54e-12d8-11eb-18b8-39b909584c72
 function euler_SIR_step(β, γ, sir_0::Vector, h::Number)
 	s, i, r = sir_0
-	
+
 	return [
-		missing,
-		missing,
-		missing,
+		s - h*β*s*i,
+		i + h*(β*s*i - γ*i),
+		r + h*γ*i,
 	]
 end
 
@@ -355,8 +362,13 @@ function euler_SIR(β, γ, sir_0::Vector, T::AbstractRange)
 	h = step(T)
 	
 	num_steps = length(T)
+
+	result = [sir_0]
+	for i in 2:num_steps
+		push!(result, euler_SIR_step(β, γ, result[i-1], h))
+	end
 	
-	return missing
+	return result
 end
 
 # ╔═╡ 4b791b76-12cd-11eb-1260-039c938f5443
@@ -395,7 +407,7 @@ md"""
 
 # ╔═╡ 589b2b4c-1245-11eb-1ec7-693c6bda97c4
 default_SIR_parameters_observation = md"""
-_your answer here_
+We don't see an outbreak, the number of infections doesn't rapidly grow, it reaches its peak at time t=30 and then it decreases.
 """
 
 # ╔═╡ 58b45a0e-1245-11eb-04d1-23a1f3a0f242
@@ -403,8 +415,19 @@ md"""
 👉 Make an interactive visualization, similar to the above plot, in which you vary $\beta$ and $\gamma$ via sliders. What relation should $\beta$ and $\gamma$ have for an epidemic outbreak to occur?
 """
 
-# ╔═╡ 68274534-1103-11eb-0d62-f1acb57721bc
+# ╔═╡ 99cc24f1-a5cb-4434-986a-6ed76d747883
+@bind β_slider Slider(0 : 0.01 : 1, show_value=true)
 
+# ╔═╡ c8a373b1-9eb2-498a-b005-1b63f5099d47
+@bind γ_slider Slider(0 : 0.01 : 1, show_value=true)
+
+# ╔═╡ 68274534-1103-11eb-0d62-f1acb57721bc
+plot_sir!(plot(), sir_T, euler_SIR(β_slider, γ_slider, [0.99, 0.01, 0.00], sir_T))
+
+# ╔═╡ 7908b6d2-7b4e-40fa-b898-a863e78191d3
+md"""
+For an outbreak to occur, β has to be significantly greater than γ.
+"""
 
 # ╔═╡ 82539bbe-106e-11eb-0e9e-170dfa6a7dad
 md"""
@@ -427,8 +450,7 @@ You should use **anonymous functions** for this. These have the form `x -> x^2`,
 
 # ╔═╡ bd8522c6-12e8-11eb-306c-c764f78486ef
 function ∂x(f::Function, a, b)
-	
-	return missing
+	return finite_difference_slope(x -> f(x, b), a, 1e-5)
 end
 
 # ╔═╡ 321964ac-126d-11eb-0a04-0d3e3fb9b17c
@@ -439,8 +461,7 @@ end
 
 # ╔═╡ b7d3aa8c-12e8-11eb-3430-ff5d7df6a122
 function ∂y(f::Function, a, b)
-	
-	return missing
+	return finite_difference_slope(y -> f(a, y), b, 1e-5)
 end
 
 # ╔═╡ a15509ee-126c-11eb-1fa3-cdda55a47fcb
@@ -457,8 +478,7 @@ md"""
 
 # ╔═╡ adbf65fe-12e8-11eb-04e9-3d763ba91a63
 function gradient(f::Function, a, b)
-	
-	return missing
+	return [∂x(f, a, b), ∂y(f, a, b)]
 end
 
 # ╔═╡ 66b8e15e-126c-11eb-095e-39c2f6abc81d
@@ -485,8 +505,7 @@ We want to minimize a 1D function, i.e. a function $f: \mathbb{R} \to \mathbb{R}
 
 # ╔═╡ a7f1829c-12e8-11eb-15a1-5de40ed92587
 function gradient_descent_1d_step(f, x0; η=0.01)
-	
-	return missing
+	return -η * finite_difference_slope(f, x0, 1e-3)
 end
 
 # ╔═╡ d33271a2-12df-11eb-172a-bd5600265f49
@@ -539,8 +558,11 @@ md"""
 
 # ╔═╡ 9489009a-12e8-11eb-2fb7-97ba0bdf339c
 function gradient_descent_1d(f, x0; η=0.01, N_steps=1000)
-	
-	return missing
+	x = x0
+	for _ in 1:N_steps
+		x += gradient_descent_1d_step(f, x, η=η)
+	end
+	return x
 end
 
 # ╔═╡ 34dc4b02-1248-11eb-26b2-5d2610cfeb41
@@ -557,7 +579,7 @@ Right now we take a fixed number of steps, even if the minimum is found quickly.
 
 # ╔═╡ ebca11d8-12c9-11eb-3dde-c546eccf40fc
 better_stopping_idea = md"""
-_your answer here_
+When the difference between previous and current position of the descent is smaller than ϵ then we can exit the function.
 """
 
 # ╔═╡ 9fd2956a-1248-11eb-266d-f558cda55702
@@ -570,14 +592,27 @@ Multivariable calculus tells us that the gradient $\nabla f(a, b)$ at a point $(
 
 # ╔═╡ 852be3c4-12e8-11eb-1bbb-5fbc0da74567
 function gradient_descent_2d_step(f, x0, y0; η=0.01)
-	
-	return missing
+	return -η .* gradient(f, x0, y0)
 end
 
 # ╔═╡ 8a114ca8-12e8-11eb-2de6-9149d1d3bc3d
 function gradient_descent_2d(f, x0, y0; η=0.01)
-	
-	return missing
+	ϵ = 1e-5
+	x = x0
+	y = y0
+	steps = 0
+	while true
+		∇x, ∇y = gradient_descent_2d_step(f, x, y, η=η)
+		if ∇x < ϵ && ∇y < ϵ
+			return x, y
+		end
+		x += ∇x
+		y += ∇y
+		steps += 1
+		if steps > 100_000
+			return x, y
+		end
+	end
 end
 
 # ╔═╡ 4454c2b2-12e3-11eb-012c-c362c4676bf6
@@ -672,7 +707,9 @@ md"""
 """
 
 # ╔═╡ 6d1ee93e-1103-11eb-140f-63fca63f8b06
-
+md"""
+Yes, the descent stops at local minima and doesn't find the global one, so depending on the starting point we end up in different minima.
+"""
 
 # ╔═╡ 8261eb92-106e-11eb-2ccc-1348f232f5c3
 md"""
@@ -747,8 +784,7 @@ $$\mathcal{L}(\mu, \sigma) := \sum_i [f_{\mu, \sigma}(x_i) - y_i]^2$$
 
 # ╔═╡ 2fc55daa-124f-11eb-399e-659e59148ef5
 function loss_dice(μ, σ)
-	
-	return missing
+	return sum([(gauss(x, μ, σ) - y)^2 for (x, y) in zip(dice_x, dice_y)])
 end
 
 # ╔═╡ 3a6ec2e4-124f-11eb-0f68-791475bab5cd
@@ -762,10 +798,9 @@ md"""
 
 # ╔═╡ a150fd60-124f-11eb-35d6-85104bcfd0fe
 found_μ, found_σ = let
-	
-	# your code here
-	
-	missing, missing
+	μ = 30
+	σ = 1
+	gradient_descent_2d(loss_dice, μ, σ, η=1e-1)
 end
 
 # ╔═╡ ac320522-124b-11eb-1552-51c2adaf2521
@@ -851,8 +886,14 @@ This time, instead of comparing two vectors of numbers, we need to compare two v
 
 # ╔═╡ 754b5368-12e8-11eb-0763-e3ec56562c5f
 function loss_sir(β, γ)
-	
-	return missing
+	sir_results = euler_SIR(β, γ, spatial_results[1], spatial_T)
+	loss = 0
+	for ((s, i, r), (s′, i′, r′)) in zip(spatial_results, sir_results)
+		loss += (s - s′)^2
+		loss += (i - i′)^2
+		loss += (r - r′)^2
+	end
+	return loss
 end
 
 # ╔═╡ ee20199a-12d4-11eb-1c2c-3f571bbb232e
@@ -865,10 +906,9 @@ md"""
 
 # ╔═╡ 6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
 found_β, found_γ = let
-	
-	# your code here
-	
-	missing, missing
+	β = 0.02
+	γ = 0.002
+	gradient_descent_2d(loss_sir, β, γ, η=1e-3)
 end
 
 # ╔═╡ 496b8816-12d3-11eb-3cec-c777ba81eb60
@@ -940,6 +980,7 @@ yays = [md"Fantastic!", md"Splendid!", md"Great!", md"Yay ❤", md"Great! 🎉",
 correct(text=rand(yays)) = Markdown.MD(Markdown.Admonition("correct", "Got it!", [text]))
 
 # ╔═╡ 3df7d63a-12c4-11eb-11ca-0b8db4bd9121
+# cf https://github.com/mitmath/18S191/issues/61
 let
 	result = euler_integrate_step(x -> x^2, 10, 11, 12)
 
@@ -948,10 +989,10 @@ let
 	elseif !(result isa Number)
 		keep_working(md"Make sure that you return a number.")
 	else
-		if result ≈ 6358
+		if result ≈ 1462
 			correct()
-		elseif result ≈ 1462
-			almost(md"Use ``f'(a+h)``, not ``f'(a)``.")
+		elseif result ≈ 6358
+			almost(md"Use ``f'(a)``, not ``f'(a+h)``.")
 		else
 			keep_working()
 		end
@@ -2154,6 +2195,7 @@ version = "0.9.1+5"
 # ╟─a732bbcc-112c-11eb-1d65-110c049e226c
 # ╟─c9535ad6-10b9-11eb-0537-45f13931cd71
 # ╟─7495af52-10ba-11eb-245f-a98781ba123c
+# ╟─80c5aa41-a907-4319-80e8-78c7228ea629
 # ╟─327de976-10b9-11eb-1916-69ad75fc8dc4
 # ╟─43df67bc-10bb-11eb-1cbd-cd962a01e3ee
 # ╠═d5a8bd48-10bf-11eb-2291-fdaaff56e4e6
@@ -2167,8 +2209,8 @@ version = "0.9.1+5"
 # ╟─4d0efa66-12c6-11eb-2027-53d34c68d5b0
 # ╠═b74d94b8-10bf-11eb-38c1-9f39dfcb1096
 # ╟─15b50428-1264-11eb-163e-23e2f3590502
-# ╟─ab72fdbe-10be-11eb-3b33-eb4ab41730d6
-# ╟─990236e0-10be-11eb-333a-d3080a224d34
+# ╠═2ce07b73-992f-40b0-aa93-080e8b189c63
+# ╟─3a56a1e9-6cdb-4fa8-8b1b-1f071adb1387
 # ╟─d21fad2a-1253-11eb-304a-2bacf9064d0d
 # ╟─518fb3aa-106e-11eb-0fcd-31091a8f12db
 # ╠═1e5ca54e-12d8-11eb-18b8-39b909584c72
@@ -2178,12 +2220,15 @@ version = "0.9.1+5"
 # ╠═4b791b76-12cd-11eb-1260-039c938f5443
 # ╠═0a095a94-1245-11eb-001a-b908128532aa
 # ╟─51c9a25e-1244-11eb-014f-0bcce2273cee
-# ╟─58675b3c-1245-11eb-3548-c9cb8a6b3188
+# ╠═58675b3c-1245-11eb-3548-c9cb8a6b3188
 # ╟─b4bb4b3a-12ce-11eb-3fe5-ad7ccd73febb
 # ╟─586d0352-1245-11eb-2504-05d0aa2352c6
 # ╟─589b2b4c-1245-11eb-1ec7-693c6bda97c4
 # ╟─58b45a0e-1245-11eb-04d1-23a1f3a0f242
+# ╠═99cc24f1-a5cb-4434-986a-6ed76d747883
+# ╠═c8a373b1-9eb2-498a-b005-1b63f5099d47
 # ╠═68274534-1103-11eb-0d62-f1acb57721bc
+# ╟─7908b6d2-7b4e-40fa-b898-a863e78191d3
 # ╟─82539bbe-106e-11eb-0e9e-170dfa6a7dad
 # ╟─b394b44e-1245-11eb-2f86-8d10113e8cfc
 # ╠═bd8522c6-12e8-11eb-306c-c764f78486ef
@@ -2207,13 +2252,13 @@ version = "0.9.1+5"
 # ╟─754e4c48-12df-11eb-3818-f54f6fc7176b
 # ╠═9489009a-12e8-11eb-2fb7-97ba0bdf339c
 # ╠═34dc4b02-1248-11eb-26b2-5d2610cfeb41
-# ╟─f46aeaf0-1246-11eb-17aa-2580fdbcfa5a
+# ╠═f46aeaf0-1246-11eb-17aa-2580fdbcfa5a
 # ╟─e3120c18-1246-11eb-3bf4-7f4ac45856e0
-# ╠═ebca11d8-12c9-11eb-3dde-c546eccf40fc
+# ╟─ebca11d8-12c9-11eb-3dde-c546eccf40fc
 # ╟─9fd2956a-1248-11eb-266d-f558cda55702
 # ╠═852be3c4-12e8-11eb-1bbb-5fbc0da74567
 # ╠═8a114ca8-12e8-11eb-2de6-9149d1d3bc3d
-# ╠═92854562-1249-11eb-0b81-156982df1284
+# ╟─92854562-1249-11eb-0b81-156982df1284
 # ╠═4454c2b2-12e3-11eb-012c-c362c4676bf6
 # ╟─fbb4a9a4-1248-11eb-00e2-fd346f0056db
 # ╟─4aace1a8-12e3-11eb-3e07-b5827a2a6765
@@ -2225,7 +2270,7 @@ version = "0.9.1+5"
 # ╟─5e0f16b4-12e3-11eb-212f-e565f97adfed
 # ╟─b6ae4d7e-12e6-11eb-1f92-c95c040d4401
 # ╟─a03890d6-1248-11eb-37ee-85b0a5273e0c
-# ╠═6d1ee93e-1103-11eb-140f-63fca63f8b06
+# ╟─6d1ee93e-1103-11eb-140f-63fca63f8b06
 # ╟─8261eb92-106e-11eb-2ccc-1348f232f5c3
 # ╠═65e691e4-124a-11eb-38b1-b1732403aa3d
 # ╟─6f4aa432-1103-11eb-13da-fdd9eefc7c86
