@@ -147,7 +147,7 @@ In our example we do indeed have a parameter $p$ that we want to change, but $f$
 """
 
 # ╔═╡ a6ae905b-db28-4e75-b567-54840dcda9a5
-f(u, p, t) = -p * u
+f(u, p, t) = -p * u # no explicit time dependence t
 
 # ╔═╡ f16644d0-e2d2-44ac-988c-aa5b178844f5
 md"""
@@ -321,9 +321,9 @@ gr()
 
 # ╔═╡ 76cbc37d-54c8-4626-8bfe-58b63a602c38
 md"""
-β = $(@bind β Slider(-0.5:0.01:2.0, default=1.0, show_value=true))
+β = $(@bind β Slider(0:0.01:2.0, default=1.0, show_value=true))
 
-γ = $(@bind γ Slider(-0.5:0.01:2.0, default=0.1, show_value=true))
+γ = $(@bind γ Slider(0:0.01:2.0, default=0.1, show_value=true))
 """
 
 # ╔═╡ d0f40681-73df-4cd3-bbd5-3edb8193153e
@@ -336,7 +336,7 @@ SIR_problem = ODEProblem(SIR, x0, (0.0, 50.0), params)
 sol = solve(SIR_problem)
 
 # ╔═╡ a766a141-5d7b-499f-9e18-48bf926ee7ea
-plot(sol)
+plot(sol, lw=2, label=["s" "i" "r"])
 
 # ╔═╡ c2765282-bcc7-4110-9822-10557326461e
 md"""
