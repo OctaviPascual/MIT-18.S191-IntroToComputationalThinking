@@ -474,6 +474,9 @@ let
 	end
 	
 	plot!(xs, ys, alpha=0.7, c=:gray)
+
+	xlabel!("x")
+	ylabel!("y")
 	
 	# as_svg(p1)
 	
