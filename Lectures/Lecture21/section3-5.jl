@@ -207,16 +207,19 @@ While we don't recommend learning about _git automation_ right away, one thing y
 """
 
 # ╔═╡ 167cbd94-851f-4147-9b9d-9b46c7959785
-bigbreak = html"""
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-"""
+begin
+	bigbreak = html"""
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	"""
+	bigbreak
+end
 
 # ╔═╡ 4ce38ec8-4084-4fe8-a248-87408cd0d39b
 bigbreak
