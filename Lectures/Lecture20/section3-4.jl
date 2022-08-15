@@ -82,7 +82,7 @@ This lecture is based on the fall 2020 "Introduction to Climate Modeling" lectur
 # ╔═╡ 340fc7c4-128f-4476-b445-65005ffa9f5a
 md"""
 ### Pre - Computational Thinking
-(traditional ode "analytic" solutions)
+(traditional ODE "analytic" solutions)
 """
 
 # ╔═╡ 7673c7b7-0921-4a7e-ae4d-e785c6391a0c
@@ -105,6 +105,8 @@ md"""
 ``y' = a``
 $(html"<br>") Solution: ``y(t) = at + y_0``
 
+Model of the sun heating the earth, none of the heat ever escapes.
+
 ---
 """
 
@@ -121,6 +123,8 @@ $(html"<br>") Solution: ``y(t) =(- \frac{a}{b})(e^{-bt}-1) + y_0 e^{-bt}``
 Comment:  Equilibrium obtained  (if $b\ne0$)  by solving y'=0 for y giving equilibrium $y=a/b$. Also
 can be obtained by letting $t\rightarrow \infty$ in the solution killing the exponential terms.
 
+Model of the sun heating the earth, earth sends some of the heat back into space.
+
 ---
 """
 
@@ -132,6 +136,8 @@ md"""
 ``y' = a - by + f(t)``
 $(html"<br>")
 Solution: ``y(t) = e^{-bt} \left( y_0 + \int_0^t  e^{bu}(a+f(u)) du \right)``
+
+Model of the sun heating the earth, earth sends some of the heat back into space and we have a green-house effect.
 
 ---
 """
@@ -204,12 +210,15 @@ end
 md"""#### 1) Background: climate physics
 
 The simplest climate model can be conceptualized as:
+
+``
 \begin{align}
 \text{\color{brown}{change in heat content}} = & + \text{\color{orange}{absorbed solar radiation (energy from the Sun's rays)}} \newline
 & - \text{\color{blue}{outgoing thermal radiation (i.e. blackbody cooling to space)}}
 \newline
 & + \text{\color{grey}{human-caused greenhouse effect (trapped outgoing radiation)}}
 \end{align}
+``
 
 where each of these is interpreted as an average over the entire globe (hence "zero-dimensional").
 """
@@ -348,7 +357,7 @@ start\_temp = $(@bind start_temp Slider(0:28; show_value=true, default=14))
 """
 
 # ╔═╡ 333290b0-0198-4306-b19b-6d30df79a280
-p2 = ODEProblem( (temp, p, t)-> (1/C) * B*(temp₀-temp), start_temp,  (0.0, 170) )
+p2 = ODEProblem( (temp, p, t)-> (1/C) * B*(temp₀-temp), start_temp,  (0.0, 172) )
 
 # ╔═╡ eeaf3735-5139-4924-9fce-14df51a61042
 begin
@@ -447,12 +456,6 @@ CO2_historical_data_url = "https://scrippsco2.ucsd.edu/assets/data/atmospheric/s
 # ╔═╡ 1cd9366a-99df-48d6-8879-7f0e786f3f34
 CO2_historical_filename = download(CO2_historical_data_url)
 
-# ╔═╡ 734df847-513f-4f12-b3b6-71f1336fabe2
-
-
-# ╔═╡ 602bc054-2a5d-46d1-b76f-7f302ea46b08
-
-
 # ╔═╡ c3b0b7fc-19be-4f04-8787-6349ab9bff7f
 begin
 
@@ -479,7 +482,7 @@ Oh no, missing data (-99.99)
 """
 
 # ╔═╡ 2bc4c596-b313-49f6-84b5-5d53f2baf0e9
-validrowsmask = CO2_historical_data_raw[:, "     CO2"] .> 0
+validrowsmask = CO2_historical_data_raw[:, "     CO2"] .> 0 # only keep data that has positive CO2 values
 
 # ╔═╡ 0e267f87-8888-43b8-b1c0-905de7a4e333
 CO2_historical_data = CO2_historical_data_raw[validrowsmask,:];
@@ -547,7 +550,7 @@ solp4 = solve(p4)
 # ╔═╡ b38727a9-72ff-499f-9751-ddfeee21959c
 begin
 	T_url = "https://data.giss.nasa.gov/gistemp/graphs/graph_data/Global_Mean_Estimates_based_on_Land_and_Ocean_Data/graph.txt";
-	T_df = CSV.read(download(T_url),DataFrame, header=false, datarow=6,delim="     ");
+	T_df = CSV.read(download(T_url),DataFrame, header=false, skipto=6,delim="     ");
     # T_df = T_df[:,[1,6]]
 	
 end
@@ -2223,8 +2226,6 @@ version = "0.9.1+5"
 # ╟─cd1dcbc4-2273-4eda-85d9-9af4fd71b3c1
 # ╠═df4e8359-af8b-4bd5-aca0-7f6dd84859d4
 # ╠═1cd9366a-99df-48d6-8879-7f0e786f3f34
-# ╠═734df847-513f-4f12-b3b6-71f1336fabe2
-# ╠═602bc054-2a5d-46d1-b76f-7f302ea46b08
 # ╠═c3b0b7fc-19be-4f04-8787-6349ab9bff7f
 # ╟─f5c2d0de-f5d2-43f2-bfca-41bd727b3ca9
 # ╟─ef9d9512-cb40-4641-9d6a-5a36f5a4b33d
