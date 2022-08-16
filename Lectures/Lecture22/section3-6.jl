@@ -108,8 +108,8 @@ sign(-Inf)
 
 # ╔═╡ 21210cfa-0366-4019-86f7-158fdd5f21ad
 md"""
-# Mathematics:multiple equilibria.  
-## Using computation to explore hysteresis.
+# Mathematics: multiple equilibria 
+## Using computation to explore hysteresis
 """
 
 # ╔═╡ 978e5fc0-ddd1-4e93-a243-a95d414123b9
@@ -348,12 +348,14 @@ md"""
 
 Recall from [Lecture 20 (Part I)](https://www.youtube.com/watch?v=Gi4ZZVS2GLA&t=15s) that the the **zero-dimensional energy balance equation** is
 
+``
 \begin{gather}
 \color{brown}{C \frac{dT}{dt}}
 \; \color{black}{=} \; \color{orange}{\frac{(1 - α)S}{4}}
 \; \color{black}{-} \; \color{blue}{(A - BT)}
 \; \color{black}{+} \; \color{grey}{a \ln \left( \frac{[\text{CO}₂]}{[\text{CO}₂]_{\text{PI}}} \right)},
 \end{gather}
+``
 """
 
 # ╔═╡ b71fca45-9687-4a51-8e1c-1f413e83e58d
@@ -367,12 +369,13 @@ $\ln \left( \frac{ [\text{CO}₂]_{\text{PI}} }{[\text{CO}₂]_{\text{PI}}} \rig
 
 and the model simplifies to
 
+``
 \begin{gather}
 \color{brown}{C \frac{dT}{dt}}
 \; \color{black}{=} \; \color{orange}{\frac{(1 - α)S}{4}}
 \; \color{black}{-} \; \color{blue}{(A - BT)}.
 \end{gather}
-
+``
 
 The dynamics of this **Ordinary Differential Equation (ODE)** are quite simple because it is *linear*: we can rewrite it in the form
 
