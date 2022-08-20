@@ -158,7 +158,7 @@ A = OffsetArray(zeros(Int,8,9), 0:7 ,0:8)
 
 # ╔═╡ 87c260a2-2901-11eb-1060-b1e4b6b5b02b
 for i ∈ I
-	A[i] = data[i]  # copy data
+	A[i] = data[i]  # copy data (instead of A[I] .= data[I])
 end
 
 # ╔═╡ a5c7693a-2901-11eb-1083-0da8138a73c2
