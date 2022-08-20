@@ -177,7 +177,7 @@ Let's plot these to see what they look like:
 
 # ╔═╡ 95fe38c5-d717-47d0-8db7-5f8d53a6c6f1
 md"""
-n = $(n_slider = @bind n Slider(0:8, show_value=true))
+n = 2^$(n_slider = @bind n Slider(0:8, show_value=true))
 """
 
 # ╔═╡ 2982c418-dad5-44cc-8194-5b607af84b16
@@ -519,7 +519,7 @@ $$\dot{x} \simeq \frac{x(t + h) - x(t)}{h}$$
 
 giving
 
-$$x(t + \delta t) \simeq x(t) + h \, f(x).$$ 
+$$x(t + h) \simeq x(t) + h \, f(x).$$ 
 
 The Euler method with constant time step is then the following algorithm:
 
@@ -1512,7 +1512,7 @@ version = "0.9.1+5"
 # ╟─3ce501b4-76bc-49ab-b3b8-a41f29dbcc2b
 # ╟─c539e622-d76d-489a-abb9-4ba47dfe9b90
 # ╟─95fe38c5-d717-47d0-8db7-5f8d53a6c6f1
-# ╠═2982c418-dad5-44cc-8194-5b607af84b16
+# ╟─2982c418-dad5-44cc-8194-5b607af84b16
 # ╠═c97964d1-b5d2-4ee7-80cc-995b3f344aa1
 # ╟─ba121b40-2bfc-42d4-81ee-5f90e18ec8de
 # ╟─74892ec6-6639-469d-8711-5039a140d833
